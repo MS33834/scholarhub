@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software in academic work, please cite it using the
+  metadata below.
+title: scholarHUB
+authors:
+  - family-names: badhope
+    given-names: badhope
+    alias: badhope
+identifiers:
+  - type: url
+    value: https://github.com/badhope/scholarHUB
+license: MIT
+type: software
+url: https://github.com/badhope/scholarHUB
+repository-code: https://github.com/badhope/scholarHUB
+keywords:
+  - academic
+  - badhope
+  - education
+  - nextjs
+  - open-source
+  - research
+  - typescript
+abstract: >-
+  学术资源聚合与检索 — 我的论文/教材/课程笔记目录。还在搭骨架, 但骨架已经比上礼拜多了。Next.js + SQLite FTS5, 先本地后服务。
