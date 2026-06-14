@@ -1,87 +1,99 @@
-import { NavLink, Link, useLocation } from 'react-router-dom'
+import { NavLink, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { Search } from 'lucide-react'
+import { Search, Languages } from 'lucide-react'
 import { useUI } from '@/store'
+import { useT } from '@/i18n/LangProvider'
 
 export function SiteHeader() {
-  const { pathname } = useLocation()
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const showToast = useUI((s) => s.showToast)
+  const { t, lang, toggleLang } = useT()
   const [q, setQ] = useState('')
 
-  // 路由变化时若停留在首页,把搜索词同步到 URL,便于分享
+  // Sync search box with ?q= from any page
   useEffect(() => {
-    if (pathname === '/') {
-      const params = new URLSearchParams(window.location.search)
-      const v = params.get('q')
-      if (v) setQ(v)
-    }
-  }, [pathname])
+    const v = searchParams.get('q')
+    setQ(v ?? '')
+  }, [searchParams])
 
-  const navItems = [
-    { to: '/', label: '首页', labelEn: 'Home' },
-    { to: '/resources', label: '资源', labelEn: 'Resources' },
-    { to: '/favorites', label: '收藏', labelEn: 'Favorites' },
-    { to: '/settings', label: '设置', labelEn: 'Settings' },
-    { to: '/about', label: '关于', labelEn: 'About' },
+  const navItems: { to: string; key: 'nav.home' | 'nav.resources' | 'nav.favorites' | 'nav.history' | 'nav.lists' | 'nav.settings' | 'nav.about' }[] = [
+    { to: '/', key: 'nav.home' },
+    { to: '/resources', key: 'nav.resources' },
+    { to: '/favorites', key: 'nav.favorites' },
+    { to: '/history', key: 'nav.history' },
+    { to: '/lists', key: 'nav.lists' },
+    { to: '/settings', key: 'nav.settings' },
+    { to: '/about', key: 'nav.about' },
   ]
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const term = q.trim()
     if (!term) {
-      showToast('请输入关键词')
+      showToast(t('search.empty'))
       return
     }
-    window.location.href = `${window.location.pathname}#/search?q=${encodeURIComponent(term)}`
+    navigate(`/search?q=${encodeURIComponent(term)}`)
   }
 
   return (
-    <header className="border-b hairline">
+    <header className="border-b border-rule sticky top-0 bg-paper/95 backdrop-blur-md z-50">
       <div className="mx-auto max-w-column px-6 sm:px-8">
-        <div className="flex items-center justify-between gap-6 py-5">
-          <Link to="/" className="flex items-baseline gap-3 group">
-            <span className="text-display text-2xl text-ink">ScholarHUB</span>
-            <span className="text-mono text-[11px] uppercase tracking-wider2 text-ink-mute">
-              Vol. 1 · 2026
+        <div className="flex items-center justify-between gap-6 py-4">
+          <Link to="/" className="flex items-center gap-3 group">
+            <span className="text-2xl font-bold text-ink tracking-tight">ScholarHUB</span>
+            <span className="text-xs font-medium text-ink-mute bg-ink-soft/10 px-2 py-1 rounded-md">
+              {t('brand.volume')}
             </span>
           </Link>
 
-          <form
-            onSubmit={onSubmit}
-            className="hidden sm:flex items-center gap-2 border hairline rounded-[2px] px-3 py-1.5 focus-within:border-moss transition-colors"
-            style={{ minWidth: 240 }}
-          >
-            <Search size={14} className="text-ink-mute" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="搜索标题、作者、关键词"
-              className="bg-transparent text-sm flex-1 placeholder:text-ink-mute"
-            />
-            <span className="text-mono text-[10px] text-ink-mute">/  Enter</span>
-          </form>
+          <div className="flex items-center gap-3">
+            <form
+              onSubmit={onSubmit}
+              className="hidden sm:flex items-center gap-2 border border-rule rounded-lg px-3 py-2 focus-within:border-moss focus-within:ring-2 focus-within:ring-moss/10 transition-all bg-paper"
+              style={{ minWidth: 280 }}
+            >
+              <Search size={16} className="text-ink-mute" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder={t('search.placeholder')}
+                className="bg-transparent text-sm flex-1 placeholder:text-ink-mute focus:outline-none"
+                aria-label={t('search.aria')}
+              />
+              <kbd className="text-xs text-ink-mute border border-rule rounded px-1.5 py-0.5 bg-ink-soft/5">/</kbd>
+            </form>
+
+            <button
+              onClick={toggleLang}
+              className="flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-moss border border-rule rounded-lg px-3 py-2 hover:border-moss/50 transition-all"
+              aria-label={lang === 'en' ? 'Switch to Chinese' : '切换到英文'}
+              title={lang === 'en' ? 'Switch to 中文' : 'Switch to English'}
+            >
+              <Languages size={16} />
+              <span>{lang === 'en' ? 'EN' : '中'}</span>
+            </button>
+          </div>
         </div>
 
-        <nav className="flex items-center gap-7 pb-4 text-sm">
+        <nav className="flex items-center gap-6 sm:gap-8 pb-3 text-sm overflow-x-auto scrollbar-hide">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === '/'}
               className={({ isActive }) =>
-                `group relative pb-1 text-ink-soft hover:text-ink transition-colors ${
-                  isActive ? 'text-ink' : ''
+                `group relative pb-1 text-ink-soft hover:text-ink transition-colors whitespace-nowrap font-medium ${
+                  isActive ? 'text-moss' : ''
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <span>{item.label}</span>
-                  <span className="ml-2 text-mono text-[10px] uppercase tracking-wider2 text-ink-mute">
-                    {item.labelEn}
-                  </span>
+                  <span>{t(item.key)}</span>
                   <span
-                    className={`absolute left-0 -bottom-0.5 h-px bg-moss transition-all ${
+                    className={`absolute left-0 -bottom-0.5 h-0.5 bg-moss transition-all rounded-full ${
                       isActive ? 'w-full' : 'w-0 group-hover:w-full'
                     }`}
                   />

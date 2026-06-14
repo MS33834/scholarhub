@@ -1,136 +1,248 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useState, useMemo } from 'react'
 import { ArrowRight, Search } from 'lucide-react'
 import { resources } from '@/data/resources'
 import { disciplines } from '@/data/disciplines'
-import { ResourceCard } from '@/components/ResourceCard'
-import { DisciplineList } from '@/components/DisciplineCard'
 import { useUI } from '@/store'
+import { DisciplineList } from '@/components/DisciplineCard'
+import { ResourceCard } from '@/components/ResourceCard'
+import { useT } from '@/i18n/LangProvider'
+import { useReadingHistory } from '@/store/readingHistory'
+
+const featuredIds = [
+  'attention-is-all-you-need',
+  'goodfellow-deep-learning-2016',
+  'einstein-1905',
+  'rudin-principles-mathematical-analysis',
+  'numpy-tutorial-2023',
+]
 
 export function HomePage() {
-  const [q, setQ] = useState('')
+  const navigate = useNavigate()
   const showToast = useUI((s) => s.showToast)
+  const { t } = useT()
+  const [q, setQ] = useState('')
+  const { history } = useReadingHistory()
 
-  const featured = useMemo(() => {
-    return [...resources].sort((a, b) => (b.citations ?? 0) - (a.citations ?? 0)).slice(0, 5)
-  }, [])
+  const featured = useMemo(
+    () =>
+      featuredIds
+        .map((id) => resources.find((r) => r.id === id))
+        .filter((r): r is NonNullable<typeof r> => Boolean(r)),
+    []
+  )
+
+  // 基于阅读历史生成推荐
+  const recommendations = useMemo(() => {
+    if (history.length === 0) return []
+    
+    // 获取最近阅读的资源
+    const recentResources = history
+      .slice(0, 5)
+      .map((h) => resources.find((r) => r.id === h.resourceId))
+      .filter((r): r is NonNullable<typeof r> => Boolean(r))
+    
+    // 收集标签和学科
+    const tagCount: Record<string, number> = {}
+    const disciplineCount: Record<string, number> = {}
+    
+    recentResources.forEach((r) => {
+      r.tags.forEach((tag) => {
+        tagCount[tag] = (tagCount[tag] || 0) + 1
+      })
+      disciplineCount[r.discipline] = (disciplineCount[r.discipline] || 0) + 1
+    })
+    
+    // 计算资源匹配分数
+    const scored = resources
+      .filter((r) => !recentResources.some((recent) => recent.id === r.id))
+      .map((r) => {
+        let score = 0
+        r.tags.forEach((tag) => {
+          score += tagCount[tag] || 0
+        })
+        score += (disciplineCount[r.discipline] || 0) * 2
+        return { resource: r, score }
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+    
+    return scored.map((item) => item.resource)
+  }, [history])
 
   const onSearch = (e: React.FormEvent) => {
     e.preventDefault()
     const term = q.trim()
     if (!term) {
-      showToast('请输入关键词')
+      showToast(t('search.empty'))
       return
     }
-    window.location.hash = `#/search?q=${encodeURIComponent(term)}`
+    navigate(`/search?q=${encodeURIComponent(term)}`)
   }
 
   return (
     <div className="page-fade">
       {/* 顶部 publication 风格横线 + 刊号 */}
-      <div className="mx-auto max-w-column px-6 sm:px-8 pt-8">
-        <div className="flex items-baseline justify-between border-b hairline pb-3">
-          <span className="text-mono text-[11px] uppercase tracking-wider2 text-ink-mute">
-            ScholarHUB · Open Academic Shelf
+      <div className="mx-auto max-w-column px-6 sm:px-8 pt-10">
+        <div className="flex items-baseline justify-between border-b border-rule pb-3">
+          <span className="text-mono text-[12px] uppercase tracking-wider2 text-ink-mute">
+            ScholarHUB · {t('brand.tagline')}
           </span>
-          <span className="text-mono text-[11px] uppercase tracking-wider2 text-ink-mute">
-            Vol. 1 · Issue 2026.06
+          <span className="text-mono text-[12px] uppercase tracking-wider2 text-ink-mute">
+            {t('brand.volume')}
           </span>
         </div>
       </div>
 
       {/* Hero */}
       <section className="mx-auto max-w-column px-6 sm:px-8 pt-24 pb-32">
-        <h1 className="text-display text-[clamp(2.4rem,6vw,4.5rem)] text-ink max-w-[760px]">
-          An open shelf of papers, books, and datasets.
-        </h1>
-        <p className="text-cn mt-6 max-w-[640px] text-[18px] leading-8 text-ink-soft">
-          面向学生与科研小白的开放学术资源聚合检索站,按学科与主题归类整理来自论文网站、出版社与公开数据平台的可下载资源,一键跳转或下载。
-        </p>
+        <div className="max-w-3xl">
+          <p className="text-sm font-medium text-moss mb-4">
+            {t('home.hero.eyebrow')}
+          </p>
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-ink whitespace-pre-line leading-[1.1] tracking-tight">
+            {t('home.hero.title')}
+          </h1>
+          <p className="mt-6 text-xl leading-relaxed text-ink-soft max-w-2xl">
+            {t('home.hero.subtitle')}
+          </p>
 
-        <form
-          onSubmit={onSearch}
-          className="mt-10 flex items-center gap-3 border-b-2 border-ink pb-3 focus-within:border-moss transition-colors"
-        >
-          <Search size={18} className="text-ink-mute" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="搜索论文标题、作者、关键词、学科..."
-            className="flex-1 bg-transparent text-[18px] placeholder:text-ink-mute"
-          />
-          <button
-            type="submit"
-            className="text-mono text-[11px] uppercase tracking-wider2 text-ink-soft hover:text-ink transition-colors flex items-center gap-1"
+          <form
+            onSubmit={onSearch}
+            className="mt-10 flex items-center gap-4 border-b-2 border-ink/20 pb-4 focus-within:border-moss transition-colors group"
           >
-            Search <ArrowRight size={14} />
-          </button>
-        </form>
+            <Search size={24} className="text-ink-mute group-focus-within:text-moss transition-colors" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={t('home.hero.search.placeholder')}
+              className="flex-1 bg-transparent text-xl placeholder:text-ink-mute focus:outline-none"
+              aria-label={t('search.aria')}
+            />
+            <button
+              type="submit"
+              className="text-sm font-semibold text-ink hover:text-moss transition-colors flex items-center gap-2 whitespace-nowrap"
+            >
+              {t('home.hero.search.submit')} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+            </button>
+          </form>
 
-        <p className="mt-4 text-mono text-[11px] uppercase tracking-wider2 text-ink-mute">
-          收录 {resources.length} 项资源 · 覆盖 {disciplines.length} 个一级学科 · 持续更新
-        </p>
+          <p className="mt-6 text-sm text-ink-mute">
+            {t('home.hero.meta', { n: resources.length, d: disciplines.length })}
+          </p>
+        </div>
       </section>
 
       {/* 学科导航 */}
       <section className="mx-auto max-w-column px-6 sm:px-8">
-        <div className="flex items-baseline justify-between mb-4">
-          <h2 className="text-display text-2xl text-ink">Disciplines</h2>
+        <div className="flex items-baseline justify-between mb-4 border-b border-rule pb-3">
+          <h2 className="text-display text-2xl text-ink">{t('home.disciplines.title')}</h2>
           <span className="text-mono text-[11px] uppercase tracking-wider2 text-ink-mute">
-            点击展开
+            {t('home.disciplines.hint')}
           </span>
         </div>
         <DisciplineList />
       </section>
 
-      {/* 精选资源 */}
-      <section className="mx-auto max-w-column px-6 sm:px-8 mt-32">
-        <div className="flex items-baseline justify-between mb-8 border-b hairline pb-3">
-          <h2 className="text-display text-2xl text-ink">Featured Resources</h2>
+      {/* 精选资源 - 横向滚动列 */}
+      <section className="mx-auto max-w-column px-6 sm:px-8 mt-24">
+        <div className="flex items-baseline justify-between mb-6 border-b border-rule pb-3">
+          <h2 className="text-display text-2xl text-ink">{t('home.recommendations.title')}</h2>
           <Link
             to="/resources"
-            className="text-mono text-[11px] uppercase tracking-wider2 text-ink-soft hover:text-ink transition-colors flex items-center gap-1"
+            className="text-mono text-[11px] uppercase tracking-wider2 text-ink-soft hover:text-moss transition-colors flex items-center gap-1"
           >
-            View all <ArrowRight size={12} />
+            {t('home.featured.viewAll')} <ArrowRight size={12} />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {featured.map((r) => (
-            <ResourceCard key={r.id} resource={r} showSummary />
-          ))}
+        <div className="-mx-6 sm:-mx-8 overflow-x-auto pb-2 scrollbar-thin">
+          <div className="flex gap-5 px-6 sm:px-8 snap-x snap-mandatory">
+            {featured.map((r) => (
+              <div key={r.id} className="w-[300px] sm:w-[340px] shrink-0 snap-start">
+                <ResourceCard resource={r} showSummary />
+              </div>
+            ))}
+          </div>
         </div>
+        <p className="mt-3 text-mono text-[10px] uppercase tracking-wider2 text-ink-mute text-right">
+          {t('home.featured.scrollHint')}
+        </p>
       </section>
+
+      {/* 个性化推荐 */}
+      {recommendations.length > 0 && (
+        <section className="mx-auto max-w-column px-6 sm:px-8 mt-24">
+          <div className="flex items-baseline justify-between mb-6 border-b border-rule pb-3">
+            <div>
+              <h2 className="text-display text-2xl text-ink">{t('home.recommendations.title')}</h2>
+              <p className="mt-1 text-[14px] text-ink-soft">{t('home.recommendations.subtitle')}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {recommendations.map((r) => (
+              <ResourceCard key={r.id} resource={r} showSummary />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 项目理念 */}
       <section className="mx-auto max-w-column px-6 sm:px-8 mt-32">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
-          <div>
-            <h3 className="text-display text-xl text-ink mb-3">What is this?</h3>
-            <p className="text-[15px] leading-7 text-ink-soft">
-              一个由社区维护的资源目录。所有数据保存在 GitHub 仓库的 JSON 文件中,既可作为阅读入口,也可作为可下载的离线档案。
+        <div className="border-t border-rule pt-12">
+          <div className="mb-10">
+            <p className="text-mono text-[11px] uppercase tracking-wider2 text-moss mb-2">
+              {t('home.hero.eyebrow')}
             </p>
+            <h2 className="text-display text-3xl sm:text-4xl text-ink tracking-tight">
+              {t('home.intro.title')}
+            </h2>
           </div>
-          <div>
-            <h3 className="text-display text-xl text-ink mb-3">How to cite?</h3>
-            <p className="text-[15px] leading-7 text-ink-soft">
-              每条资源详情页都提供 APA / MLA / GB/T 7714 / BibTeX 四种引用格式,点击即可复制。
-            </p>
-          </div>
-          <div>
-            <h3 className="text-display text-xl text-ink mb-3">How to contribute?</h3>
-            <p className="text-[15px] leading-7 text-ink-soft">
-              提交 PR,新增一条资源;或在 issue 中指出过期链接与错误信息。详情见
-              <a
-                className="ml-1 underline decoration-1 underline-offset-4 hover:text-moss"
-                href="https://github.com/badhope/scholarHUB/blob/main/CONTRIBUTING.md"
-                target="_blank"
-                rel="noreferrer"
-              >
-                贡献指南
-              </a>
-              。
-            </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
+            <div className="group">
+              <div className="mb-4 inline-flex items-center justify-center w-10 h-10 rounded-[2px] bg-moss/5 border border-moss/20">
+                <span className="text-display text-xl text-moss">I</span>
+              </div>
+              <h3 className="text-display text-xl text-ink mb-3 group-hover:text-moss transition-colors">
+                {t('home.intro.what.title')}
+              </h3>
+              <p className="text-[16px] leading-7 text-ink-soft">
+                {t('home.intro.what.body')}
+              </p>
+            </div>
+            <div className="group">
+              <div className="mb-4 inline-flex items-center justify-center w-10 h-10 rounded-[2px] bg-moss/5 border border-moss/20">
+                <span className="text-display text-xl text-moss">II</span>
+              </div>
+              <h3 className="text-display text-xl text-ink mb-3 group-hover:text-moss transition-colors">
+                {t('home.intro.cite.title')}
+              </h3>
+              <p className="text-[16px] leading-7 text-ink-soft">
+                {t('home.intro.cite.body')}
+              </p>
+            </div>
+            <div className="group">
+              <div className="mb-4 inline-flex items-center justify-center w-10 h-10 rounded-[2px] bg-moss/5 border border-moss/20">
+                <span className="text-display text-xl text-moss">III</span>
+              </div>
+              <h3 className="text-display text-xl text-ink mb-3 group-hover:text-moss transition-colors">
+                {t('home.intro.contrib.title')}
+              </h3>
+              <p className="text-[16px] leading-7 text-ink-soft">
+                {t('home.intro.contrib.body')}{' '}
+                <a
+                  className="inline-flex items-center gap-1 text-moss hover:text-ink transition-colors underline decoration-1 underline-offset-4"
+                  href="https://github.com/badhope/scholarHUB/blob/main/CONTRIBUTING.md"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t('footer.link.contributing')}
+                </a>
+                {'.'}
+              </p>
+            </div>
           </div>
         </div>
       </section>

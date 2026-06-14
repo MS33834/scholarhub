@@ -1,46 +1,111 @@
-# Contributing
+# Contributing to ScholarHUB
 
-Want to send a PR? Cool. Here's the flow.
+Thank you for your interest in contributing to ScholarHUB! This document provides guidelines and information for contributors.
 
-## Before you start
+## How to Contribute
 
-- **Open an issue first** if the change is non-trivial. I don't want you
-  to spend a weekend on something I'd have asked you to do differently.
-- Read the code that's already there. I try to keep it boring and
-  consistent. If you're adding a new pattern, it should fit.
-- Look at the README for how to install / run / test. Use the lockfile
-  that's checked in; don't regenerate it.
+### Adding a New Resource
 
-## Local checks
+1. **Fork the repository** and create a new branch
+2. **Edit `src/data/resources.ts`** and add your resource entry:
 
-Run whatever the project has: `pnpm test`, `pytest`, `cargo test`, etc.
-If linter / formatter configs are checked in, run them too. CI will
-catch what you missed, but a green push is faster than a red one.
+```typescript
+{
+  id: 'unique-resource-id',
+  type: 'paper', // or 'dataset', 'book', 'tutorial'
+  title: 'Resource Title',
+  authors: ['Author Name'],
+  year: 2024,
+  venue: 'Conference/Journal Name',
+  doi: '10.xxxx/xxxxx', // optional
+  discipline: 'computer-science', // see Discipline type in src/types/index.ts
+  subdiscipline: 'machine-learning', // optional
+  tags: ['tag1', 'tag2'],
+  abstract: 'Brief abstract of the resource...',
+  preview: 'Short preview text for cards...',
+  downloadUrl: 'https://example.com/download', // optional
+  externalUrl: 'https://example.com/resource', // optional
+  citation: {
+    apa: 'Author, A. (2024). Title. Venue.',
+    mla: 'Author, A. "Title." Venue (2024).',
+    gbt: 'Author A. Title[J]. Venue, 2024.',
+    bibtex: '@article{...}',
+  },
+  addedAt: '2024-01-01',
+  citations: 100, // optional
+}
+```
 
-## Commit messages
+3. **Submit a pull request** with your changes
 
-I don't enforce Conventional Commits. Subject, blank line, body, done.
-If a commit fixes an issue, mention the issue number. Don't bother with
-emoji or "WIP" prefixes.
+### Reporting Issues
 
-## Pull requests
+- **Broken links**: File an issue with the resource ID and the correct URL
+- **Missing resources**: File an issue or submit a PR with the resource data
+- **Bugs**: File an issue with reproduction steps and expected behavior
 
-- Fill the PR template. One paragraph in the body is fine; screenshots
-  help for UI.
-- Keep the diff small. Squash before merging unless the history matters.
-- I'll review roughly in order of arrival. If CI is green and the change
-  does what the description says, I'll merge. I might push back on
-  architecture; that's not personal.
-- Don't commit secrets, generated build output, large binaries, or
-  someone else's code without a license.
+## Development Setup
 
-## What I won't merge
+### Prerequisites
 
-- Drive-by refactors that don't fix a real problem.
-- New dependencies for trivial reasons.
-- Anything that breaks the existing API without a heads-up first.
+- Node.js 18+ and npm
 
-## License
+### Installation
 
-By contributing, you agree your contribution is licensed under the same
-license as the rest of the project. See [`LICENSE`](./LICENSE).
+```bash
+npm install
+```
+
+### Development
+
+```bash
+npm run dev
+```
+
+The site will be available at `http://localhost:5173/scholarHUB/`
+
+### Build
+
+```bash
+npm run build
+```
+
+### Lint
+
+```bash
+npm run lint
+```
+
+## Project Structure
+
+```
+src/
+├── components/       # Reusable UI components
+├── data/            # Resource and discipline data
+├── i18n/            # Internationalization (EN/CN)
+├── pages/           # Page components
+├── store/           # Zustand state management
+├── types/           # TypeScript type definitions
+└── utils/           # Utility functions
+```
+
+## Code Style
+
+- Use TypeScript for all new code
+- Follow existing naming conventions
+- Keep components small and focused
+- Use Zustand for state management
+- Use the i18n system for all user-facing strings
+
+## Internationalization
+
+ScholarHUB supports both English and Chinese. When adding new UI strings:
+
+1. Add the key to `src/i18n/dict.ts` in the `Dict` type
+2. Add English translation in the `en` object
+3. Add Chinese translation in the `zh` object
+4. Use the key in your component: `t('your.key')`
+
+## Questions?
+
+Feel free to open an issue if you have questions about contributing.

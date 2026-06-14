@@ -1,62 +1,100 @@
 import { useMemo } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import { ArrowRight, Search } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { resources } from '@/data/resources'
 import { ResourceCard } from '@/components/ResourceCard'
+import { useT } from '@/i18n/LangProvider'
+
+const FIELDS_WEIGHT: Array<{ key: keyof (typeof resources)[number]; weight: number }> = [
+  { key: 'title', weight: 8 },
+  { key: 'venue', weight: 3 },
+  { key: 'authors', weight: 2 },
+  { key: 'tags', weight: 2 },
+  { key: 'subdiscipline', weight: 2 },
+  { key: 'abstract', weight: 1 },
+  { key: 'preview', weight: 1 },
+]
+
+function scoreResource(r: ReturnType<typeof resources.find>, q: string): number {
+  if (!r) return 0
+  const lower = q.toLowerCase()
+  let score = 0
+  for (const f of FIELDS_WEIGHT) {
+    const value = r[f.key]
+    if (!value) continue
+    const str = Array.isArray(value) ? value.join(' ') : String(value)
+    if (str.toLowerCase().includes(lower)) score += f.weight
+  }
+  return score
+}
 
 export function SearchPage() {
+  const { t } = useT()
   const [params] = useSearchParams()
   const q = params.get('q')?.trim() ?? ''
 
   const results = useMemo(() => {
     if (!q) return []
-    const t = q.toLowerCase()
-    const score = (r: typeof resources[number]) => {
-      let s = 0
-      if (r.title.toLowerCase().includes(t)) s += 8
-      if (r.abstract.toLowerCase().includes(t)) s += 3
-      if (r.preview.toLowerCase().includes(t)) s += 4
-      if (r.tags.some((tag) => tag.toLowerCase().includes(t))) s += 5
-      if (r.authors.some((a) => a.toLowerCase().includes(t))) s += 6
-      if (r.venue?.toLowerCase().includes(t)) s += 2
-      if (r.subdiscipline?.toLowerCase().includes(t)) s += 4
-      return s
-    }
     return resources
-      .map((r) => ({ r, s: score(r) }))
+      .map((r) => ({ r, s: scoreResource(r, q) }))
       .filter((x) => x.s > 0)
-      .sort((a, b) => b.s - a.s || b.r.year - a.r.year)
+      .sort((a, b) => b.s - a.s)
       .map((x) => x.r)
   }, [q])
 
-  return (
-    <div className="page-fade mx-auto max-w-column px-6 sm:px-8 py-16">
-      <p className="text-mono text-[11px] uppercase tracking-wider2 text-ink-mute mb-3">
-        Search
-      </p>
-      <h1 className="text-display text-3xl text-ink">
-        {q ? <>Results for &ldquo;{q}&rdquo;</> : '请输入关键词'}
-      </h1>
-      <p className="text-mono text-[12px] text-ink-mute mt-2">
-        {q ? `${results.length} 项结果` : '回到首页使用搜索框开始检索。'}
-      </p>
-
-      <div className="mt-10 space-y-8">
-        {results.length === 0 && q && (
-          <div className="border hairline rounded-[2px] p-8 text-center">
-            <p className="text-display text-xl text-ink mb-2">未找到相关资源</p>
-            <p className="text-[15px] text-ink-soft">
-              试试更通用的关键词,或浏览{' '}
-              <Link to="/resources" className="underline decoration-1 underline-offset-4 hover:text-moss">
-                全部资源
-              </Link>
-              。
-            </p>
+  if (!q) {
+    return (
+      <div className="page-fade mx-auto max-w-column px-6 sm:px-8 pt-16 pb-32">
+        <div className="py-20 text-center">
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-moss/10 mb-8">
+            <Search className="text-moss" size={40} />
           </div>
-        )}
-        {results.map((r) => (
-          <ResourceCard key={r.id} resource={r} showPreview showSummary showActions={false} />
-        ))}
+          <h1 className="text-3xl sm:text-4xl font-bold text-ink">{t('search.empty.title')}</h1>
+          <p className="mt-4 text-lg text-ink-soft max-w-md mx-auto">{t('search.empty.body')}</p>
+        </div>
       </div>
+    )
+  }
+
+  return (
+    <div className="page-fade mx-auto max-w-column px-6 sm:px-8 pt-16 pb-32">
+      <header className="border-b border-rule pb-8">
+        <p className="text-sm font-medium text-moss mb-3">
+          {t('home.hero.eyebrow')}
+        </p>
+        <h1 className="text-4xl sm:text-5xl font-bold text-ink tracking-tight">
+          {t('search.results.title', { q })}
+        </h1>
+        <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-moss/10 text-moss rounded-md">
+          <span className="text-sm font-medium">
+            {t('search.results.count', { n: results.length })}
+          </span>
+        </div>
+      </header>
+
+      {results.length === 0 ? (
+        <div className="py-20 text-center">
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-ink-soft/10 mb-8">
+            <Search className="text-ink-mute" size={40} />
+          </div>
+          <p className="text-3xl font-bold text-ink">{t('search.noResults', { q })}</p>
+          <Link
+            to="/resources"
+            className="mt-8 inline-flex items-center gap-2 text-base font-semibold text-moss hover:text-ink transition-colors group"
+          >
+            {t('home.featured.viewAll')} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </div>
+      ) : (
+        <section className="mt-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {results.map((r) => (
+              <ResourceCard key={r.id} resource={r} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   )
 }

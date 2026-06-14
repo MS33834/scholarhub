@@ -1,17 +1,37 @@
+import { useT } from '@/i18n/LangProvider'
+
 interface FilterChipsProps {
+  /** Small uppercase group label, rendered above the chips on wider screens. */
+  label: string
   options: { value: string; label: string }[]
-  active: string
+  value: string
   onChange: (v: string) => void
-  allLabel?: string
 }
 
-export function FilterChips({ options, active, onChange, allLabel = '全部' }: FilterChipsProps) {
+/**
+ * Horizontal chip group for filter rows. The first option is treated as the
+ * "show all" reset and uses the translated `type.all` label.
+ */
+export function FilterChips({ label, options, value, onChange }: FilterChipsProps) {
+  const { t } = useT()
+  const allOption = { value: 'all', label: t('type.all') }
+  const all = [allOption, ...options]
+
   return (
-    <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-2">
-      <Chip active={active === ''} onClick={() => onChange('')} label={allLabel} />
-      {options.map((o) => (
-        <Chip key={o.value} active={active === o.value} onClick={() => onChange(o.value)} label={o.label} />
-      ))}
+    <div className="flex flex-wrap items-center gap-3 overflow-x-auto pb-2">
+      <span className="text-mono text-[10px] uppercase tracking-wider2 text-ink-mute w-16 shrink-0 font-medium">
+        {label}
+      </span>
+      <div className="flex flex-wrap items-center gap-2.5">
+        {all.map((o) => (
+          <Chip
+            key={o.value}
+            active={value === o.value}
+            onClick={() => onChange(o.value)}
+            label={o.label}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -20,8 +40,10 @@ function Chip({ active, onClick, label }: { active: boolean; onClick: () => void
   return (
     <button
       onClick={onClick}
-      className={`shrink-0 text-mono text-[11px] uppercase tracking-wider2 px-3 py-1.5 border rounded-[2px] transition-colors ${
-        active ? 'border-moss text-moss' : 'border-rule text-ink-soft hover:border-ink hover:text-ink'
+      className={`shrink-0 text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200 active:scale-95 ${
+        active
+          ? 'border border-moss bg-moss/10 text-moss shadow-sm'
+          : 'border border-rule text-ink-soft hover:border-moss/50 hover:text-moss hover:bg-moss/5'
       }`}
     >
       {label}

@@ -1,95 +1,101 @@
-import { useFavorites, useUI } from '@/store'
-import { resourceMap } from '@/data/resources'
-import { ResourceCard } from '@/components/ResourceCard'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Download, Trash2 } from 'lucide-react'
+import { ArrowRight, Bookmark, Trash2 } from 'lucide-react'
+import { useFavorites } from '@/store'
+import { useT } from '@/i18n/LangProvider'
+import { ResourceCard } from '@/components/ResourceCard'
+import { resources } from '@/data/resources'
 
 export function FavoritesPage() {
-  const ids = useFavorites((s) => s.ids)
-  const remove = useFavorites((s) => s.remove)
-  const clear = useFavorites((s) => s.clear)
-  const exportJSON = useFavorites((s) => s.exportJSON)
-  const showToast = useUI((s) => s.showToast)
-  const list = ids.map((id) => resourceMap[id]).filter(Boolean)
+  const { ids, remove, clear } = useFavorites()
+  const { t } = useT()
+  const [busy, setBusy] = useState(false)
+
+  const list = useMemo(() => resources.filter((r) => ids.includes(r.id)), [ids])
 
   const onExport = () => {
-    const blob = new Blob([exportJSON()], { type: 'application/json' })
+    if (ids.length === 0) return
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      count: list.length,
+      resources: list,
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
     a.download = `scholarhub-favorites-${new Date().toISOString().slice(0, 10)}.json`
+    document.body.appendChild(a)
     a.click()
+    document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    showToast('收藏夹已导出')
   }
 
   const onClear = () => {
-    if (ids.length === 0) return
-    if (window.confirm('确定要清空全部收藏吗?此操作不可恢复。')) {
-      clear()
-      showToast('收藏夹已清空')
-    }
+    if (!window.confirm(t('favorites.confirm.clear'))) return
+    setBusy(true)
+    clear()
+    setBusy(false)
   }
 
   return (
-    <div className="page-fade mx-auto max-w-column px-6 sm:px-8 py-16">
-      <div className="border-b hairline pb-3 mb-4 flex items-baseline justify-between">
-        <h1 className="text-display text-3xl text-ink">Favorites</h1>
-        <span className="text-mono text-[11px] uppercase tracking-wider2 text-ink-mute">
-          {ids.length} 项
-        </span>
-      </div>
-
-      <p className="text-[14px] text-ink-soft mb-2">
-        收藏仅保存在本地浏览器,清除浏览器数据将丢失。可随时导出为 JSON 文件。
-      </p>
-
-      <div className="flex items-center gap-2 mb-10">
-        <button
-          onClick={onExport}
-          disabled={ids.length === 0}
-          className="flex items-center gap-1.5 px-3 py-1.5 border rounded-[2px] text-mono text-[11px] uppercase tracking-wider2 hover:border-ink hover:text-ink transition-colors disabled:opacity-40 disabled:hover:border-rule disabled:hover:text-ink-soft"
-          style={{ borderColor: 'var(--rule)' }}
-        >
-          <Download size={12} /> 导出 JSON
-        </button>
-        <button
-          onClick={onClear}
-          disabled={ids.length === 0}
-          className="flex items-center gap-1.5 px-3 py-1.5 border rounded-[2px] text-mono text-[11px] uppercase tracking-wider2 hover:border-ink hover:text-ink transition-colors disabled:opacity-40 disabled:hover:border-rule disabled:hover:text-ink-soft"
-          style={{ borderColor: 'var(--rule)' }}
-        >
-          <Trash2 size={12} /> 清空全部
-        </button>
-      </div>
+    <div className="page-fade mx-auto max-w-column px-6 sm:px-8 pt-16 pb-32">
+      <header className="border-b border-rule pb-8 flex items-baseline justify-between gap-6 flex-wrap">
+        <div>
+          <p className="text-sm font-medium text-moss mb-3">
+            {t('home.hero.eyebrow')}
+          </p>
+          <h1 className="text-4xl sm:text-5xl font-bold text-ink tracking-tight">{t('favorites.title')}</h1>
+          <p className="mt-3 text-lg text-ink-soft">{t('favorites.subtitle')}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onExport}
+            disabled={ids.length === 0}
+            className="text-sm font-medium px-4 py-2 border border-rule rounded-lg text-ink-soft hover:text-ink hover:border-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {t('favorites.export')}
+          </button>
+          <button
+            onClick={onClear}
+            disabled={busy || ids.length === 0}
+            className="text-sm font-medium px-4 py-2 border border-rule rounded-lg text-ink-soft hover:text-ochre hover:border-ochre disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {t('favorites.clearAll')}
+          </button>
+        </div>
+      </header>
 
       {list.length === 0 ? (
-        <div className="border hairline rounded-[2px] p-12 text-center">
-          <p className="text-display text-xl text-ink mb-2">收藏夹是空的</p>
-          <p className="text-[15px] text-ink-soft">
-            浏览
-            <Link to="/resources" className="mx-1 underline decoration-1 underline-offset-4 hover:text-moss">
-              资源列表
-            </Link>
-            找到感兴趣的内容,点击书签图标加入收藏。
-          </p>
+        <div className="mt-20 text-center">
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-moss/10 mb-8">
+            <Bookmark className="text-moss" size={40} />
+          </div>
+          <p className="text-3xl font-bold text-ink">{t('favorites.empty.title')}</p>
+          <p className="mt-3 text-lg text-ink-soft max-w-md mx-auto">{t('favorites.empty.body')}</p>
+          <Link
+            to="/resources"
+            className="inline-flex items-center gap-2 mt-8 text-base font-semibold text-moss hover:text-ink transition-colors group"
+          >
+            {t('home.featured.viewAll')} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+          </Link>
         </div>
       ) : (
-        <div className="space-y-8">
+        <section className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative">
           {list.map((r) => (
             <div key={r.id} className="relative">
               <button
                 onClick={() => remove(r.id)}
-                className="absolute -left-2 top-2 p-1.5 text-ink-mute hover:text-ochre transition-colors z-10"
-                aria-label="移除收藏"
-                title="移除"
+                className="absolute -left-1 -top-1 sm:left-2 sm:top-2 p-2 text-ink-mute hover:text-ochre transition-colors z-10"
+                aria-label={t('card.fav.remove')}
+                title={t('card.fav.remove.title')}
               >
-                <Trash2 size={14} />
+                <Trash2 size={16} />
               </button>
-              <ResourceCard resource={r} showPreview showSummary showActions={false} />
+              <ResourceCard resource={r} />
             </div>
           ))}
-        </div>
+        </section>
       )}
     </div>
   )

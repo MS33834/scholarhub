@@ -1,92 +1,100 @@
-import { useParams, Link, Navigate } from 'react-router-dom'
+import { useMemo } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { resources } from '@/data/resources'
 import { disciplineMap } from '@/data/disciplines'
+import { useT } from '@/i18n/LangProvider'
 import { ResourceCard } from '@/components/ResourceCard'
+import { formatNumber } from '@/utils/format'
+import type { Discipline } from '@/types'
 
 export function DisciplinePage() {
-  const { slug = '' } = useParams<{ slug: string }>()
-  const discipline = disciplineMap[slug]
-  if (!discipline) return <Navigate to="/" replace />
+  const { slug } = useParams<{ slug: string }>()
+  const { t, lang } = useT()
 
-  const list = resources.filter((r) => r.discipline === discipline.slug)
-  const subdisciplines = Array.from(new Set(list.map((r) => r.subdiscipline).filter(Boolean))) as string[]
+  const discipline = disciplineMap[slug as Discipline]
+
+  const { list, yearSpan, subdisciplines } = useMemo(() => {
+    if (!discipline) return { list: [], yearSpan: '—', subdisciplines: [] }
+    const filtered = resources.filter((r) => r.discipline === discipline.slug)
+    const years = filtered.map((r) => r.year)
+    const span = years.length ? `${Math.min(...years)} – ${Math.max(...years)}` : '—'
+    const subs = Array.from(new Set(filtered.map((r) => r.subdiscipline).filter(Boolean)))
+    return { list: filtered, yearSpan: span, subdisciplines: subs }
+  }, [discipline])
+
+  if (!discipline) {
+    return (
+      <div className="page-fade mx-auto max-w-column px-6 sm:px-8 py-32 text-center">
+        <h1 className="text-3xl sm:text-4xl font-bold text-ink">{t('discipline.notFound.title')}</h1>
+        <p className="mt-3 text-lg text-ink-soft">{t('discipline.empty')}</p>
+        <Link
+          to="/"
+          className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-moss hover:text-ink transition-colors group"
+        >
+          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> {t('nav.home')}
+        </Link>
+      </div>
+    )
+  }
+
+  const name = lang === 'en' ? discipline.nameEn : discipline.name
+  const blurb = lang === 'en' ? discipline.blurbEn : discipline.blurb
 
   return (
-    <div className="page-fade mx-auto max-w-column px-6 sm:px-8 py-16">
-      <p className="text-mono text-[11px] uppercase tracking-wider2 text-ink-mute mb-3">
-        Discipline · {String(discipline.order).padStart(2, '0')}
-      </p>
-      <h1 className="text-display text-[clamp(2.4rem,5vw,4rem)] text-ink">
-        {discipline.name}
-      </h1>
-      <p className="text-mono text-[12px] uppercase tracking-wider2 text-ink-mute mt-2">
-        / {discipline.nameEn}
-      </p>
-      <p className="text-cn mt-6 text-[18px] leading-8 text-ink-soft max-w-[680px]">
-        {discipline.blurb}
-      </p>
+    <div className="page-fade mx-auto max-w-column px-6 sm:px-8 pt-12 pb-32">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-2 text-sm font-medium text-ink-soft hover:text-moss transition-colors group"
+      >
+        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> {t('nav.home')}
+      </Link>
 
-      <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-6 border-y hairline py-6">
-        <Stat label="Resources" value={list.length} />
-        <Stat label="Subdisciplines" value={subdisciplines.length} />
-        <Stat label="Year span" value={computeYearSpan(list.map((r) => r.year))} />
-      </div>
-
-      {subdisciplines.length > 0 && (
-        <div className="mt-8 flex flex-wrap gap-2">
-          {subdisciplines.map((s) => (
-            <span
-              key={s}
-              className="text-mono text-[10px] uppercase tracking-wider2 px-2 py-0.5 border rounded-[2px]"
-              style={{ borderColor: 'var(--ochre)', color: 'var(--ochre)' }}
-            >
-              {s}
-            </span>
-          ))}
+      <header className="mt-8 border-b border-rule pb-10">
+        <div className="flex items-baseline gap-4">
+          <span className="text-sm font-medium text-ink-mute w-7 shrink-0">
+            {String(discipline.order).padStart(2, '0')}
+          </span>
+          <p className="text-sm font-medium text-moss">
+            {t('nav.resources')}
+          </p>
         </div>
-      )}
+        <h1 className="mt-3 text-4xl sm:text-5xl lg:text-6xl font-bold text-ink leading-[1.1] tracking-tight">{name}</h1>
+        <p className="mt-4 text-lg leading-relaxed text-ink-soft max-w-2xl">{blurb}</p>
+      </header>
 
-      <h2 className="text-display text-2xl text-ink mt-16 mb-6 border-b hairline pb-3">
-        All resources
-      </h2>
+      <section className="mt-10 grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 border-b border-rule pb-8">
+        <div className="px-2">
+          <p className="text-sm font-medium text-ink-mute">
+            {t('resources.title')}
+          </p>
+          <p className="mt-2 text-3xl font-bold text-ink">{formatNumber(list.length)}</p>
+        </div>
+        <div className="px-2 border-l border-rule">
+          <p className="text-sm font-medium text-ink-mute">
+            {t('discipline.subdisciplines')}
+          </p>
+          <p className="mt-2 text-3xl font-bold text-ink">{formatNumber(subdisciplines.length)}</p>
+        </div>
+        <div className="px-2 border-l border-rule">
+          <p className="text-sm font-medium text-ink-mute">
+            {t('discipline.yearSpan')}
+          </p>
+          <p className="mt-2 text-2xl font-bold text-ink">{yearSpan}</p>
+        </div>
+      </section>
 
       {list.length === 0 ? (
-        <p className="text-mono text-[12px] text-ink-mute">本学科暂无收录资源。</p>
-      ) : (
-        <div className="space-y-8">
-          {list.map((r) => (
-            <ResourceCard
-              key={r.id}
-              resource={r}
-              showPreview
-              showSummary
-              showActions={false}
-            />
-          ))}
+        <div className="mt-16 text-center">
+          <p className="text-2xl font-semibold text-ink">{t('discipline.empty')}</p>
         </div>
+      ) : (
+        <section className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {list.map((r) => (
+            <ResourceCard key={r.id} resource={r} showSummary />
+          ))}
+        </section>
       )}
-
-      <p className="mt-16 text-mono text-[11px] uppercase tracking-wider2 text-ink-mute">
-        <Link to="/resources" className="hover:text-ink">
-          ← 全部资源
-        </Link>
-      </p>
     </div>
   )
-}
-
-function Stat({ label, value }: { label: string; value: number | string }) {
-  return (
-    <div>
-      <p className="text-mono text-[11px] uppercase tracking-wider2 text-ink-mute">{label}</p>
-      <p className="text-display text-2xl text-ink mt-1">{value}</p>
-    </div>
-  )
-}
-
-function computeYearSpan(years: number[]): string {
-  if (years.length === 0) return '—'
-  const min = Math.min(...years)
-  const max = Math.max(...years)
-  return min === max ? String(min) : `${min} – ${max}`
 }
