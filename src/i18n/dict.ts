@@ -202,6 +202,46 @@ export type Dict = {
   'lists.title': string
   'lists.subtitle': string
   'lists.create': string
+
+  // ── Authentication ──────────────────────────────────────────
+  'auth.login.title': string
+  'auth.login.subtitle': string
+  'auth.login.username': string
+  'auth.login.password': string
+  'auth.login.loading': string
+  'auth.login.submit': string
+  'auth.login.noAccount': string
+  'auth.login.register': string
+  'auth.register.title': string
+  'auth.register.subtitle': string
+  'auth.register.email': string
+  'auth.register.username': string
+  'auth.register.password': string
+  'auth.register.loading': string
+  'auth.register.submit': string
+  'auth.register.hasAccount': string
+  'auth.register.login': string
+
+  // ── Profile ─────────────────────────────────────────────────
+  'profile.admin': string
+  'profile.user': string
+  'profile.adminPanel': string
+  'profile.logout': string
+
+  // ── Admin ───────────────────────────────────────────────────
+  'admin.title': string
+  'admin.addResource': string
+  'admin.editResource': string
+  'admin.newResource': string
+  'admin.type': string
+  'admin.year': string
+  'admin.discipline': string
+  'admin.save': string
+  'admin.cancel': string
+  'admin.loading': string
+  'admin.noResources': string
+  'admin.actions': string
+  'admin.confirmDelete': string
   'lists.empty.title': string
   'lists.empty.body': string
   'lists.delete': string
@@ -532,6 +572,46 @@ const en: Dict = {
   'shortcuts.search': 'Focus search',
   'shortcuts.navigateUp': 'Navigate up',
   'shortcuts.navigateDown': 'Navigate down',
+
+  // ── Authentication ──────────────────────────────────────────
+  'auth.login.title': 'Login',
+  'auth.login.subtitle': 'Welcome back to ScholarHUB',
+  'auth.login.username': 'Username',
+  'auth.login.password': 'Password',
+  'auth.login.loading': 'Logging in...',
+  'auth.login.submit': 'Login',
+  'auth.login.noAccount': "Don't have an account?",
+  'auth.login.register': 'Register',
+  'auth.register.title': 'Register',
+  'auth.register.subtitle': 'Create your ScholarHUB account',
+  'auth.register.email': 'Email',
+  'auth.register.username': 'Username',
+  'auth.register.password': 'Password',
+  'auth.register.loading': 'Creating account...',
+  'auth.register.submit': 'Register',
+  'auth.register.hasAccount': 'Already have an account?',
+  'auth.register.login': 'Login',
+
+  // ── Profile ─────────────────────────────────────────────────
+  'profile.admin': 'Administrator',
+  'profile.user': 'User',
+  'profile.adminPanel': 'Admin Panel',
+  'profile.logout': 'Logout',
+
+  // ── Admin ───────────────────────────────────────────────────
+  'admin.title': 'Resource Management',
+  'admin.addResource': 'Add Resource',
+  'admin.editResource': 'Edit Resource',
+  'admin.newResource': 'New Resource',
+  'admin.type': 'Type',
+  'admin.year': 'Year',
+  'admin.discipline': 'Discipline',
+  'admin.save': 'Save',
+  'admin.cancel': 'Cancel',
+  'admin.loading': 'Loading resources...',
+  'admin.noResources': 'No resources found',
+  'admin.actions': 'Actions',
+  'admin.confirmDelete': 'Are you sure you want to delete this resource?',
   'shortcuts.openItem': 'Open selected item',
   'shortcuts.goHome': 'Go to home',
   'shortcuts.goBack': 'Go back',
@@ -794,6 +874,46 @@ const zh: Dict = {
   'shortcuts.goBack': '返回上一页',
   'shortcuts.toggleTheme': '切换主题',
   'shortcuts.showHelp': '显示此帮助',
+
+  // ── Authentication ──────────────────────────────────────────
+  'auth.login.title': '登录',
+  'auth.login.subtitle': '欢迎回到 ScholarHUB',
+  'auth.login.username': '用户名',
+  'auth.login.password': '密码',
+  'auth.login.loading': '登录中...',
+  'auth.login.submit': '登录',
+  'auth.login.noAccount': '还没有账号？',
+  'auth.login.register': '注册',
+  'auth.register.title': '注册',
+  'auth.register.subtitle': '创建你的 ScholarHUB 账号',
+  'auth.register.email': '邮箱',
+  'auth.register.username': '用户名',
+  'auth.register.password': '密码',
+  'auth.register.loading': '创建账号中...',
+  'auth.register.submit': '注册',
+  'auth.register.hasAccount': '已有账号？',
+  'auth.register.login': '登录',
+
+  // ── Profile ─────────────────────────────────────────────────
+  'profile.admin': '管理员',
+  'profile.user': '用户',
+  'profile.adminPanel': '管理面板',
+  'profile.logout': '退出登录',
+
+  // ── Admin ───────────────────────────────────────────────────
+  'admin.title': '资源管理',
+  'admin.addResource': '添加资源',
+  'admin.editResource': '编辑资源',
+  'admin.newResource': '新建资源',
+  'admin.type': '类型',
+  'admin.year': '年份',
+  'admin.discipline': '学科',
+  'admin.save': '保存',
+  'admin.cancel': '取消',
+  'admin.loading': '加载资源中...',
+  'admin.noResources': '未找到资源',
+  'admin.actions': '操作',
+  'admin.confirmDelete': '确定要删除此资源吗？',
 }
 
 export const dicts = { en, zh } as const
