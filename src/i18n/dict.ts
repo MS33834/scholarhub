@@ -48,6 +48,7 @@ export type Dict = {
   'home.featured.scrollHint': string
   'home.recommendations.title': string
   'home.recommendations.subtitle': string
+  'home.intro.title': string
   'home.intro.what.title': string
   'home.intro.what.body': string
   'home.intro.cite.title': string
@@ -311,6 +312,7 @@ const en: Dict = {
   'home.featured.scrollHint': '← scroll horizontally →',
   'home.recommendations.title': 'Recommended for You',
   'home.recommendations.subtitle': 'Based on your reading history',
+  'home.intro.title': 'About This Project',
   'home.intro.what.title': 'What is this',
   'home.intro.what.body':
     'A community-maintained catalog of open academic resources. All data lives on GitHub — browse online or download for offline use.',
@@ -579,6 +581,7 @@ const zh: Dict = {
   'home.featured.scrollHint': '← 横向滑动浏览更多 →',
   'home.recommendations.title': '为你推荐',
   'home.recommendations.subtitle': '基于你的阅读历史',
+  'home.intro.title': '关于本项目',
   'home.intro.what.title': '关于这个项目',
   'home.intro.what.body':
     '这是一个由社区维护的开放学术资源目录。所有数据都保存在 GitHub 上，你可以直接在线浏览，也可以下载离线使用。',
