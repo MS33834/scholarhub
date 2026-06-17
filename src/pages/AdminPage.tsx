@@ -26,14 +26,6 @@ export function AdminPage() {
     preview: '',
   });
 
-  useEffect(() => {
-    if (!user?.is_admin) {
-      navigate('/');
-      return;
-    }
-    loadResources();
-  }, [user, navigate]);
-
   const loadResources = async () => {
     try {
       const result = await api.getResources({ limit: 100 });
@@ -44,6 +36,16 @@ export function AdminPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!user?.is_admin) {
+      navigate('/');
+      return;
+    }
+    // Data-fetching effect: setState calls inside loadResources are async (post-await)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadResources();
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -23,6 +23,30 @@ export function PDFViewer({ url, isOpen, onClose }: PDFViewerProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pdfDocRef = useRef<any>(null)
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const renderPage = async (pdf: any, pageNum: number, currentScale: number) => {
+    if (!canvasRef.current) return
+
+    try {
+      const page = await pdf.getPage(pageNum)
+      const viewport = page.getViewport({ scale: currentScale })
+      const canvas = canvasRef.current
+      const context = canvas.getContext('2d')
+
+      if (!context) return
+
+      canvas.height = viewport.height
+      canvas.width = viewport.width
+
+      await page.render({
+        canvasContext: context,
+        viewport: viewport,
+      }).promise
+    } catch (err) {
+      console.error('Page rendering error:', err)
+    }
+  }
+
   useEffect(() => {
     if (!isOpen || !url) return
 
@@ -61,30 +85,6 @@ export function PDFViewer({ url, isOpen, onClose }: PDFViewerProps) {
       renderPage(pdfDocRef.current, currentPage, scale)
     }
   }, [scale, currentPage])
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const renderPage = async (pdf: any, pageNum: number, currentScale: number) => {
-    if (!canvasRef.current) return
-
-    try {
-      const page = await pdf.getPage(pageNum)
-      const viewport = page.getViewport({ scale: currentScale })
-      const canvas = canvasRef.current
-      const context = canvas.getContext('2d')
-
-      if (!context) return
-
-      canvas.height = viewport.height
-      canvas.width = viewport.width
-
-      await page.render({
-        canvasContext: context,
-        viewport: viewport,
-      }).promise
-    } catch (err) {
-      console.error('Page rendering error:', err)
-    }
-  }
 
   const goToPage = async (pageNum: number) => {
     if (!pdfDocRef.current || pageNum < 1 || pageNum > totalPages) return

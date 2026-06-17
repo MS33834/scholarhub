@@ -13,8 +13,11 @@ export function SiteHeader() {
 
   // Sync search box with ?q= from any page
   useEffect(() => {
-    const v = searchParams.get('q')
-    setQ(v ?? '')
+    const v = searchParams.get('q') ?? ''
+    // Guarded setState: only updates when the URL param differs from local input,
+    // so no cascading render occurs in practice.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setQ((prev) => (prev === v ? prev : v))
   }, [searchParams])
 
   const navItems: { to: string; key: 'nav.home' | 'nav.resources' | 'nav.favorites' | 'nav.history' | 'nav.lists' | 'nav.settings' | 'nav.about' }[] = [
