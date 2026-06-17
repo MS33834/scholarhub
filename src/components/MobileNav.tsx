@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react'
 import { Menu, X, Home, BookOpen, Heart, Clock, List, Settings, Info } from 'lucide-react'
 import { useMobile } from '@/hooks/useMobile'
 import { Link, useLocation } from 'react-router-dom'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 
 interface MobileNavProps {
   children?: ReactNode

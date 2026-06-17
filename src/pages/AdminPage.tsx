@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
-import { useT } from '@/i18n/LangProvider';
+import { useT } from '@/i18n/useLang';
 import { api } from '../services/api';
 import { Plus, Edit, Trash2, Save, X } from 'lucide-react';
 import type { Resource } from '../types';

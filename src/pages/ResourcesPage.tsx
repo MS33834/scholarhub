@@ -4,7 +4,7 @@ import { ResourceCard } from '@/components/ResourceCard'
 import { FilterChips } from '@/components/FilterChips'
 import { resources } from '@/data/resources'
 import { disciplines } from '@/data/disciplines'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 import type { ResourceType } from '@/types'
 
 type TypeFilter = ResourceType | 'all'

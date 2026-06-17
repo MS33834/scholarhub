@@ -4,7 +4,7 @@ import { ArrowRight, ChevronDown } from 'lucide-react'
 import type { DisciplineInfo } from '@/types'
 import { resources } from '@/data/resources'
 import { disciplines } from '@/data/disciplines'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 import { ResourceCard } from '@/components/ResourceCard'
 
 interface DisciplineCardProps {

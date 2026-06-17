@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, Bookmark, BookmarkCheck } from 'lucide-react'
 import type { Resource } from '@/types'
 import { useFavorites } from '@/store'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 import { formatAuthors } from '@/utils/format'
 
 interface ResourceCardProps {

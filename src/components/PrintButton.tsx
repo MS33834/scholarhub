@@ -1,5 +1,5 @@
 import { Printer } from 'lucide-react'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 
 interface PrintButtonProps {
   className?: string

@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 
 interface PaginationProps {
   currentPage: number

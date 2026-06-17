@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { resources } from '@/data/resources'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 import type { Resource } from '@/types'
 
 interface TimelineItem {

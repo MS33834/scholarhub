@@ -1,6 +1,6 @@
 import { useAuth } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
-import { useT } from '@/i18n/LangProvider';
+import { useT } from '@/i18n/useLang';
 import { User, LogOut, Settings, Shield } from 'lucide-react';
 
 export function ProfilePage() {

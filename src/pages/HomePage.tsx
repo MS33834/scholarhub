@@ -6,7 +6,7 @@ import { disciplines } from '@/data/disciplines'
 import { useUI } from '@/store'
 import { DisciplineList } from '@/components/DisciplineCard'
 import { ResourceCard } from '@/components/ResourceCard'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 import { useReadingHistory } from '@/store/readingHistory'
 
 const featuredIds = [

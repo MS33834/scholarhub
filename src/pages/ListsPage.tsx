@@ -1,5 +1,5 @@
 import { useReadingLists } from '@/store/readingLists'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 import { Trash2, X, BookMarked, Plus, ArrowRight } from 'lucide-react'
 import { useState } from 'react'
 import { resources } from '@/data/resources'

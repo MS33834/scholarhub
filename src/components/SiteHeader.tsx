@@ -2,7 +2,7 @@ import { NavLink, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { Search, Languages } from 'lucide-react'
 import { useUI } from '@/store'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 
 export function SiteHeader() {
   const [searchParams] = useSearchParams()

@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { ChevronRight, Home } from 'lucide-react'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 
 interface BreadcrumbItem {
   label: string

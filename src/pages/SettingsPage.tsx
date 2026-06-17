@@ -1,5 +1,5 @@
 import { useSettings } from '@/store'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 import type { Lang } from '@/i18n/dict'
 
 interface SectionProps<T extends string> {

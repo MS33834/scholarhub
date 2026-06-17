@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../store/authStore';
-import { useT } from '@/i18n/LangProvider';
+import { useT } from '@/i18n/useLang';
 import { LogIn, Lock, User } from 'lucide-react';
 
 export function LoginPage() {

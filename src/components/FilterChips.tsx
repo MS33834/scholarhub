@@ -1,4 +1,4 @@
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 
 interface FilterChipsProps {
   /** Small uppercase group label, rendered above the chips on wider screens. */

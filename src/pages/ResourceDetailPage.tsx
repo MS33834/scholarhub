@@ -12,7 +12,7 @@ import {
 import { resources } from '@/data/resources'
 import { useFavorites, useUI } from '@/store'
 import { useReadingHistory } from '@/store/readingHistory'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 import { ResourceCard } from '@/components/ResourceCard'
 import { formatAuthors, formatNumber } from '@/utils/format'
 import type { ResourceType } from '@/types'

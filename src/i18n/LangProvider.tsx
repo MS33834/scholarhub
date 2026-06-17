@@ -1,27 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { useSettings } from '@/store'
 import { dicts, type Lang, type Dict } from './dict'
-
-type Vars = Record<string, string | number>
-type DictValue = string | { label: string; desc: string }
-
-interface LangCtx {
-  lang: Lang
-  setLang: (l: Lang) => void
-  toggleLang: () => void
-  /** Look up a key, optionally with interpolation variables. */
-  t: (key: keyof Dict, vars?: Vars) => string
-  /** Look up a settings-style {label, desc} value. */
-  opt: (key: keyof Dict) => { label: string; desc: string }
-}
-
-const LangContext = createContext<LangCtx | null>(null)
-
-function format(template: string, vars?: Vars): string {
-  if (!vars) return template
-  return template.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? `{${k}}`))
-}
+import { LangContext, format, type LangCtx } from './useLang'
 
 export function LangProvider({ children }: { children: ReactNode }) {
   const lang = useSettings((s) => s.lang)
@@ -33,11 +14,11 @@ export function LangProvider({ children }: { children: ReactNode }) {
   }, [lang])
 
   const t = useCallback(
-    (key: keyof Dict, vars?: Vars): string => {
-      const value: DictValue = dicts[lang][key]
+    (key: keyof Dict, vars?: Parameters<typeof format>[1]): string => {
+      const value = dicts[lang][key]
       if (typeof value === 'string') return format(value, vars)
       // Fall back to English if zh dict is missing this key
-      const fallback: DictValue = dicts.en[key]
+      const fallback = dicts.en[key]
       if (typeof fallback === 'string') return format(fallback, vars)
       return String(key)
     },
@@ -46,9 +27,9 @@ export function LangProvider({ children }: { children: ReactNode }) {
 
   const opt = useCallback(
     (key: keyof Dict): { label: string; desc: string } => {
-      const value: DictValue = dicts[lang][key]
+      const value = dicts[lang][key]
       if (typeof value === 'object') return value
-      const fallback: DictValue = dicts.en[key]
+      const fallback = dicts.en[key]
       if (typeof fallback === 'object') return fallback
       return { label: String(key), desc: '' }
     },
@@ -72,11 +53,3 @@ export function LangProvider({ children }: { children: ReactNode }) {
 
   return <LangContext.Provider value={value}>{children}</LangContext.Provider>
 }
-
-export function useT(): LangCtx {
-  const ctx = useContext(LangContext)
-  if (!ctx) throw new Error('useT must be used within <LangProvider>')
-  return ctx
-}
-
-export type { Lang }

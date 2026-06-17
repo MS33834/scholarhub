@@ -1,4 +1,4 @@
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 
 const sections: { titleKey: 'about.mission.title' | 'about.scope.title' | 'about.data.title' | 'about.contribute.title' | 'about.license.title'; bodyKey: 'about.mission.body' | 'about.scope.body' | 'about.data.body' | 'about.contribute.body' | 'about.license.body' }[] = [
   { titleKey: 'about.mission.title', bodyKey: 'about.mission.body' },

@@ -1,6 +1,6 @@
 import { Component, type ReactNode } from 'react'
 import { ArrowLeft } from 'lucide-react'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 
 interface Props {
   children: ReactNode

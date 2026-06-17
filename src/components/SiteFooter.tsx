@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 import { ArrowUpRight } from 'lucide-react'
 
 function GithubMark({ size = 16 }: { size?: number }) {

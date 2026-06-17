@@ -4,7 +4,7 @@ import { ArrowRight, Search } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { resources } from '@/data/resources'
 import { ResourceCard } from '@/components/ResourceCard'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 
 const FIELDS_WEIGHT: Array<{ key: keyof (typeof resources)[number]; weight: number }> = [
   { key: 'title', weight: 8 },

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Bookmark, Trash2 } from 'lucide-react'
 import { useFavorites } from '@/store'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 import { ResourceCard } from '@/components/ResourceCard'
 import { resources } from '@/data/resources'
 

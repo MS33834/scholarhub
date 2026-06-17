@@ -1,5 +1,5 @@
 import { useReadingHistory } from '@/store/readingHistory'
-import { useT } from '@/i18n/LangProvider'
+import { useT } from '@/i18n/useLang'
 import { Link } from 'react-router-dom'
 import { Trash2, Clock, ArrowRight } from 'lucide-react'
 import { resources } from '@/data/resources'
