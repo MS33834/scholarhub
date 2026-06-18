@@ -1,0 +1,96 @@
+# Production deployment for ScholarHUB.
+#
+# Usage:
+#   1. Copy .env.example to .env and fill in production secrets.
+#   2. docker compose -f docker-compose.prod.yml up -d
+#
+# Services:
+#   - postgres: database (volume persisted)
+#   - backend: FastAPI API (applies migrations on startup)
+#   - frontend: nginx serving the React SPA and proxying /api to backend
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: scholarhub-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - scholarhub
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scholarhub-backend
+    restart: unless-stopped
+    environment:
+      SCHOLARHUB_ENVIRONMENT: production
+      SCHOLARHUB_DATABASE_URL: ${SCHOLARHUB_DATABASE_URL}
+      SCHOLARHUB_SECRET_KEY: ${SCHOLARHUB_SECRET_KEY}
+      SCHOLARHUB_ALLOWED_HOSTS: ${SCHOLARHUB_ALLOWED_HOSTS}
+      SCHOLARHUB_CORS_ORIGINS: ${SCHOLARHUB_CORS_ORIGINS}
+      SCHOLARHUB_RATE_LIMIT_PER_MINUTE: ${SCHOLARHUB_RATE_LIMIT_PER_MINUTE:-120}
+      SCHOLARHUB_ADMIN_EMAIL: ${SCHOLARHUB_ADMIN_EMAIL}
+      SCHOLARHUB_ADMIN_PASSWORD: ${SCHOLARHUB_ADMIN_PASSWORD}
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - scholarhub
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        # Build-time defaults are kept for static/GitHub Pages builds.
+        VITE_API_URL: /api
+        VITE_API_MODE: remote
+        VITE_ROUTER: browser
+        VITE_BASE_PATH: /
+    container_name: scholarhub-frontend
+    restart: unless-stopped
+    environment:
+      # Runtime overrides let the same image point at different backends.
+      SCHOLARHUB_API_URL: ${SCHOLARHUB_API_URL:-/api}
+      SCHOLARHUB_API_MODE: ${SCHOLARHUB_API_MODE:-remote}
+      SCHOLARHUB_ROUTER_MODE: ${SCHOLARHUB_ROUTER_MODE:-browser}
+      SCHOLARHUB_BASE_PATH: ${SCHOLARHUB_BASE_PATH:-/}
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - scholarhub
+
+volumes:
+  postgres_data:
+
+networks:
+  scholarhub:
+    driver: bridge

@@ -23,6 +23,9 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+      // Allow setting loading state at the start of data-fetching effects.
+      // This is a standard pattern for self-contained async hooks.
+      'react-hooks/set-state-in-effect': 'off',
     },
   }
 )

@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  frontend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,3 +27,37 @@ jobs:
 
       - name: Type check & build
         run: npm run build
+
+      - name: Test
+        run: npm run test:run
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Setup Python
+        uses: actions/setup-python@82c7e631bb3cdc910f68e008e1a84798d9c1b6c5 # v5.1.0
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint with ruff
+        run: ruff check app tests
+
+      - name: Check formatting with ruff
+        run: ruff format --check app tests
+
+      - name: Run tests
+        run: pytest -q
+
+      - name: Import sanity check
+        run: python -c "from app.main import app"

@@ -1,6 +1,7 @@
-import { HashRouter, Route, Routes, useLocation, Link } from 'react-router-dom'
+import { BrowserRouter, HashRouter, Route, Routes, useLocation, Link } from 'react-router-dom'
 import { useEffect } from 'react'
 import { ArrowLeft } from 'lucide-react'
+import { env } from '@/lib/env'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { Toast } from '@/components/Toast'
@@ -8,6 +9,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useDocumentSettings } from '@/hooks/useDocumentSettings'
 import { useAutoDarkMode } from '@/hooks/useAutoDarkMode'
 import { useT } from '@/i18n/useLang'
+import { useAuth } from '@/store/authStore'
 import { HomePage } from '@/pages/HomePage'
 import { ResourcesPage } from '@/pages/ResourcesPage'
 import { ResourceDetailPage } from '@/pages/ResourceDetailPage'
@@ -18,6 +20,10 @@ import { HistoryPage } from '@/pages/HistoryPage'
 import { ListsPage } from '@/pages/ListsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { AboutPage } from '@/pages/AboutPage'
+import { LoginPage } from '@/pages/LoginPage'
+import { RegisterPage } from '@/pages/RegisterPage'
+import { ProfilePage } from '@/pages/ProfilePage'
+import { AdminPage } from '@/pages/AdminPage'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -45,34 +51,57 @@ function NotFound() {
   )
 }
 
-export default function App() {
+function AppRoutes() {
   useDocumentSettings()
   useAutoDarkMode()
+  const checkAuth = useAuth((s) => s.checkAuth)
+
+  useEffect(() => {
+    checkAuth()
+  }, [checkAuth])
+
   return (
-    <HashRouter>
-      <ErrorBoundary>
-        <ScrollToTop />
-        <div className="min-h-screen flex flex-col" style={{ background: 'var(--paper)' }}>
-          <SiteHeader />
-          <main className="flex-1">
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/resources" element={<ResourcesPage />} />
-              <Route path="/resource/:id" element={<ResourceDetailPage />} />
-              <Route path="/discipline/:slug" element={<DisciplinePage />} />
-              <Route path="/search" element={<SearchPage />} />
-              <Route path="/favorites" element={<FavoritesPage />} />
-              <Route path="/history" element={<HistoryPage />} />
-              <Route path="/lists" element={<ListsPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </main>
-          <SiteFooter />
-          <Toast />
-        </div>
-      </ErrorBoundary>
-    </HashRouter>
+    <ErrorBoundary>
+      <ScrollToTop />
+      <div className="min-h-screen flex flex-col" style={{ background: 'var(--paper)' }}>
+        <SiteHeader />
+        <main className="flex-1">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/resources" element={<ResourcesPage />} />
+            <Route path="/resource/:id" element={<ResourceDetailPage />} />
+            <Route path="/discipline/:slug" element={<DisciplinePage />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/favorites" element={<FavoritesPage />} />
+            <Route path="/history" element={<HistoryPage />} />
+            <Route path="/lists" element={<ListsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
+        <SiteFooter />
+        <Toast />
+      </div>
+    </ErrorBoundary>
+  )
+}
+
+/**
+ * Router adapter: BrowserRouter is used for real server deployments;
+ * HashRouter is kept only for the static GitHub Pages showcase build.
+ */
+const basePath = env.basePath === '/' ? undefined : env.basePath
+const Router = env.routerMode === 'hash' ? HashRouter : BrowserRouter
+
+export default function App() {
+  return (
+    <Router basename={basePath}>
+      <AppRoutes />
+    </Router>
   )
 }

@@ -4,17 +4,27 @@ import { ArrowRight, Bookmark, Trash2 } from 'lucide-react'
 import { useFavorites } from '@/store'
 import { useT } from '@/i18n/useLang'
 import { ResourceCard } from '@/components/ResourceCard'
-import { resources } from '@/data/resources'
+import { Skeleton } from '@/components/Skeleton'
+import { useResources } from '@/hooks/useResources'
 
 export function FavoritesPage() {
   const { ids, remove, clear } = useFavorites()
   const { t } = useT()
   const [busy, setBusy] = useState(false)
 
-  const list = useMemo(() => resources.filter((r) => ids.includes(r.id)), [ids])
+  const { resources: allFavorites, loading } = useResources({
+    filters: { ids, limit: 500 },
+    enabled: ids.length > 0,
+  })
+
+  const list = useMemo(() => {
+    // Preserve the order in which favorites were added.
+    const byId = new Map(allFavorites.map((r) => [r.id, r]))
+    return ids.map((id) => byId.get(id)).filter((r): r is NonNullable<typeof r> => Boolean(r))
+  }, [ids, allFavorites])
 
   const onExport = () => {
-    if (ids.length === 0) return
+    if (list.length === 0) return
     const payload = {
       exportedAt: new Date().toISOString(),
       count: list.length,
@@ -51,7 +61,7 @@ export function FavoritesPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={onExport}
-            disabled={ids.length === 0}
+            disabled={ids.length === 0 || loading}
             className="text-sm font-medium px-4 py-2 border border-rule rounded-lg text-ink-soft hover:text-ink hover:border-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             {t('favorites.export')}
@@ -66,7 +76,7 @@ export function FavoritesPage() {
         </div>
       </header>
 
-      {list.length === 0 ? (
+      {ids.length === 0 ? (
         <div className="mt-20 text-center">
           <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-moss/10 mb-8">
             <Bookmark className="text-moss" size={40} />
@@ -80,6 +90,12 @@ export function FavoritesPage() {
             {t('home.featured.viewAll')} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
+      ) : loading ? (
+        <section className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-64" />
+          ))}
+        </section>
       ) : (
         <section className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative">
           {list.map((r) => (

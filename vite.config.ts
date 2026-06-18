@@ -4,8 +4,10 @@ import { VitePWA } from 'vite-plugin-pwa'
 import path from 'node:path'
 
 // https://vite.dev/config/
+const basePath = process.env.VITE_BASE_PATH || '/'
+
 export default defineConfig({
-  base: '/scholarHUB/',
+  base: basePath,
   plugins: [
     react(),
     VitePWA({

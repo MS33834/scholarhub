@@ -1,13 +1,14 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useMemo } from 'react'
 import { ArrowRight, Search } from 'lucide-react'
-import { resources } from '@/data/resources'
 import { disciplines } from '@/data/disciplines'
 import { useUI } from '@/store'
 import { DisciplineList } from '@/components/DisciplineCard'
 import { ResourceCard } from '@/components/ResourceCard'
+import { Skeleton } from '@/components/Skeleton'
 import { useT } from '@/i18n/useLang'
 import { useReadingHistory } from '@/store/readingHistory'
+import { useResources } from '@/hooks/useResources'
 
 const featuredIds = [
   'attention-is-all-you-need',
@@ -23,38 +24,39 @@ export function HomePage() {
   const { t } = useT()
   const [q, setQ] = useState('')
   const { history } = useReadingHistory()
+  const { resources: allResources, loading } = useResources({ filters: { limit: 500 } })
 
   const featured = useMemo(
     () =>
       featuredIds
-        .map((id) => resources.find((r) => r.id === id))
+        .map((id) => allResources.find((r) => r.id === id))
         .filter((r): r is NonNullable<typeof r> => Boolean(r)),
-    []
+    [allResources]
   )
 
   // 基于阅读历史生成推荐
   const recommendations = useMemo(() => {
-    if (history.length === 0) return []
-    
+    if (history.length === 0 || allResources.length === 0) return []
+
     // 获取最近阅读的资源
     const recentResources = history
       .slice(0, 5)
-      .map((h) => resources.find((r) => r.id === h.resourceId))
+      .map((h) => allResources.find((r) => r.id === h.resourceId))
       .filter((r): r is NonNullable<typeof r> => Boolean(r))
-    
+
     // 收集标签和学科
     const tagCount: Record<string, number> = {}
     const disciplineCount: Record<string, number> = {}
-    
+
     recentResources.forEach((r) => {
       r.tags.forEach((tag) => {
         tagCount[tag] = (tagCount[tag] || 0) + 1
       })
       disciplineCount[r.discipline] = (disciplineCount[r.discipline] || 0) + 1
     })
-    
+
     // 计算资源匹配分数
-    const scored = resources
+    const scored = allResources
       .filter((r) => !recentResources.some((recent) => recent.id === r.id))
       .map((r) => {
         let score = 0
@@ -67,9 +69,9 @@ export function HomePage() {
       .filter((item) => item.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 6)
-    
+
     return scored.map((item) => item.resource)
-  }, [history])
+  }, [history, allResources])
 
   const onSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -129,7 +131,9 @@ export function HomePage() {
           </form>
 
           <p className="mt-6 text-sm text-ink-mute">
-            {t('home.hero.meta', { n: resources.length, d: disciplines.length })}
+            {loading
+              ? t('home.hero.meta', { n: '…', d: disciplines.length })
+              : t('home.hero.meta', { n: allResources.length, d: disciplines.length })}
           </p>
         </div>
       </section>
@@ -159,11 +163,17 @@ export function HomePage() {
 
         <div className="-mx-6 sm:-mx-8 overflow-x-auto pb-2 scrollbar-thin">
           <div className="flex gap-5 px-6 sm:px-8 snap-x snap-mandatory">
-            {featured.map((r) => (
-              <div key={r.id} className="w-[300px] sm:w-[340px] shrink-0 snap-start">
-                <ResourceCard resource={r} showSummary />
-              </div>
-            ))}
+            {loading
+              ? Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="w-[300px] sm:w-[340px] shrink-0 snap-start">
+                    <Skeleton className="h-80" />
+                  </div>
+                ))
+              : featured.map((r) => (
+                  <div key={r.id} className="w-[300px] sm:w-[340px] shrink-0 snap-start">
+                    <ResourceCard resource={r} showSummary />
+                  </div>
+                ))}
           </div>
         </div>
         <p className="mt-3 text-mono text-[10px] uppercase tracking-wider2 text-ink-mute text-right">

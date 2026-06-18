@@ -1,9 +1,10 @@
 import { useReadingLists } from '@/store/readingLists'
 import { useT } from '@/i18n/useLang'
 import { Trash2, X, BookMarked, Plus, ArrowRight } from 'lucide-react'
-import { useState } from 'react'
-import { resources } from '@/data/resources'
+import { useMemo, useState } from 'react'
 import { ResourceCard } from '@/components/ResourceCard'
+import { Skeleton } from '@/components/Skeleton'
+import { useResources } from '@/hooks/useResources'
 
 export function ListsPage() {
   const { t } = useT()
@@ -14,6 +15,27 @@ export function ListsPage() {
   const [selectedList, setSelectedList] = useState<string | null>(null)
 
   const allLists = getAllLists()
+
+  const selectedListData = useMemo(
+    () => (selectedList ? lists.find((l) => l.id === selectedList) : null),
+    [lists, selectedList],
+  )
+  const selectedListIds = useMemo(
+    () => selectedListData?.resourceIds || [],
+    [selectedListData],
+  )
+
+  const { resources: selectedListResources, loading } = useResources({
+    filters: { ids: selectedListIds, limit: 500 },
+    enabled: selectedListIds.length > 0,
+  })
+
+  const selectedResourcesOrdered = useMemo(() => {
+    const byId = new Map(selectedListResources.map((r) => [r.id, r]))
+    return selectedListIds
+      .map((id) => byId.get(id))
+      .filter((r): r is NonNullable<typeof r> => r !== undefined)
+  }, [selectedListIds, selectedListResources])
 
   const handleCreate = () => {
     if (newListName.trim()) {
@@ -32,13 +54,6 @@ export function ListsPage() {
       }
     }
   }
-
-  const selectedListData = selectedList ? lists.find((l) => l.id === selectedList) : null
-  const selectedListResources = selectedListData
-    ? selectedListData.resourceIds
-        .map((id) => resources.find((r) => r.id === id))
-        .filter((r): r is NonNullable<typeof r> => r !== undefined)
-    : []
 
   return (
     <div className="page-fade mx-auto max-w-column px-6 sm:px-8 pt-16 pb-32">
@@ -179,13 +194,19 @@ export function ListsPage() {
                 <X size={20} />
               </button>
             </div>
-            {selectedListResources.length === 0 ? (
+            {loading ? (
+              <div className="space-y-5">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-48" />
+                ))}
+              </div>
+            ) : selectedResourcesOrdered.length === 0 ? (
               <div className="text-center py-16">
                 <p className="text-ink-soft">{t('lists.noResources')}</p>
               </div>
             ) : (
               <div className="space-y-5">
-                {selectedListResources.map((resource) => (
+                {selectedResourcesOrdered.map((resource) => (
                   <ResourceCard key={resource.id} resource={resource} />
                 ))}
               </div>

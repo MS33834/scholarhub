@@ -1,30 +1,25 @@
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, ChevronDown } from 'lucide-react'
-import type { DisciplineInfo } from '@/types'
-import { resources } from '@/data/resources'
+import type { DisciplineInfo, Resource } from '@/types'
 import { disciplines } from '@/data/disciplines'
 import { useT } from '@/i18n/useLang'
 import { ResourceCard } from '@/components/ResourceCard'
+import { useResources } from '@/hooks/useResources'
 
 interface DisciplineCardProps {
   discipline: DisciplineInfo
+  previewResources: Resource[]
+  total: number
 }
 
-export function DisciplineCard({ discipline }: DisciplineCardProps) {
+export function DisciplineCard({ discipline, previewResources, total }: DisciplineCardProps) {
   const { t, lang } = useT()
   const [open, setOpen] = useState(false)
 
-  const { list, total } = useMemo(() => {
-    const all = resources.filter((r) => r.discipline === discipline.slug)
-    return {
-      list: all.slice(0, 6),
-      total: all.length,
-    }
-  }, [discipline.slug])
-
   const name = lang === 'en' ? discipline.nameEn : discipline.name
   const blurb = lang === 'en' ? discipline.blurbEn : discipline.blurb
+  const list = previewResources.slice(0, 6)
 
   return (
     <section className="border-b border-rule group/section">
@@ -81,11 +76,34 @@ export function DisciplineCard({ discipline }: DisciplineCardProps) {
 }
 
 export function DisciplineList() {
+  const { t } = useT()
+  const { resources, loading } = useResources({ filters: { limit: 1000 } })
+
+  const byDiscipline = useMemo(() => {
+    const map = new Map<string, Resource[]>()
+    resources.forEach((r) => {
+      const list = map.get(r.discipline) || []
+      list.push(r)
+      map.set(r.discipline, list)
+    })
+    return map
+  }, [resources])
+
   return (
     <div>
       {disciplines.map((d) => (
-        <DisciplineCard key={d.slug} discipline={d} />
+        <DisciplineCard
+          key={d.slug}
+          discipline={d}
+          previewResources={byDiscipline.get(d.slug) || []}
+          total={byDiscipline.get(d.slug)?.length || 0}
+        />
       ))}
+      {loading && (
+        <div className="py-8 text-center text-ink-mute">
+          {t('admin.loading')}
+        </div>
+      )}
     </div>
   )
 }

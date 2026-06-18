@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, Bookmark, BookmarkCheck } from 'lucide-react'
 import type { Resource } from '@/types'
-import { useFavorites } from '@/store'
+import { useFavorites } from '@/hooks/useFavorites'
 import { useT } from '@/i18n/useLang'
 import { formatAuthors } from '@/utils/format'
 
@@ -11,8 +11,8 @@ interface ResourceCardProps {
 }
 
 export function ResourceCard({ resource, showSummary = false }: ResourceCardProps) {
-  const isFav = useFavorites((s) => s.ids.includes(resource.id))
-  const toggleFav = useFavorites((s) => s.toggle)
+  const { ids, toggle: toggleFav } = useFavorites()
+  const isFav = ids.includes(resource.id)
   const { t } = useT()
 
   const summary = t('card.summary', {
@@ -28,7 +28,13 @@ export function ResourceCard({ resource, showSummary = false }: ResourceCardProp
           {t(`type.${resource.type}` as const)} · {resource.year}
         </span>
         <button
-          onClick={() => toggleFav(resource.id)}
+          onClick={async () => {
+            try {
+              await toggleFav(resource.id)
+            } catch {
+              // Error state is already set inside the hook.
+            }
+          }}
           className="shrink-0 p-2 text-ink-mute hover:text-moss transition-all rounded-lg hover:bg-moss/10 active:scale-90"
           aria-label={isFav ? t('card.fav.remove') : t('card.fav.add')}
           title={isFav ? t('card.fav.remove.title') : t('card.fav.add.title')}

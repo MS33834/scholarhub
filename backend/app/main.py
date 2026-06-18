@@ -1,22 +1,63 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from slowapi.errors import RateLimitExceeded
+from slowapi.extension import _rate_limit_exceeded_handler
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api.auth import router as auth_router
 from app.api.favorites import router as favorites_router
 from app.api.history import router as history_router
 from app.api.resources import router as resources_router
 from app.core.config import settings
+from app.core.limiter import limiter, rate_limit
+from app.core.logging import configure_logging
+from app.middleware.request_logging import RequestLoggingMiddleware
 
-app = FastAPI(title=settings.app_name, version="1.1.0")
+configure_logging()
 
-# CORS
+app = FastAPI(
+    title=settings.app_name,
+    version="1.1.0",
+    docs_url="/docs" if not settings.is_production else None,
+    redoc_url="/redoc" if not settings.is_production else None,
+)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add baseline security headers to every response."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        # CSP is intentionally minimal; tighten once asset hosts are known.
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"
+        )
+        return response
+
+
+# Middleware order matters: request logging first (outermost) so it captures
+# the full request lifecycle, then security headers, CORS, and trusted host.
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=settings.cors_methods,
+    allow_headers=settings.cors_headers,
 )
+
+if settings.is_production:
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts_list)
 
 # Routers
 app.include_router(auth_router, prefix="/api")
@@ -26,7 +67,8 @@ app.include_router(history_router, prefix="/api")
 
 
 @app.get("/")
-async def root():
+@rate_limit(f"{settings.rate_limit_per_minute}/minute")
+async def root(request: Request):
     return {
         "name": "ScholarHUB API",
         "version": "1.1.0",
@@ -36,4 +78,9 @@ async def root():
 
 @app.get("/health")
 async def health():
+    return {"status": "ok"}
+
+
+@app.get("/api/health")
+async def api_health():
     return {"status": "ok"}

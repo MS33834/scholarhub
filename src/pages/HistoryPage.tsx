@@ -1,8 +1,10 @@
+import { useMemo } from 'react'
 import { useReadingHistory } from '@/store/readingHistory'
 import { useT } from '@/i18n/useLang'
 import { Link } from 'react-router-dom'
 import { Trash2, Clock, ArrowRight } from 'lucide-react'
-import { resources } from '@/data/resources'
+import { Skeleton } from '@/components/Skeleton'
+import { useResources } from '@/hooks/useResources'
 import type { ResourceType } from '@/types'
 
 const typeLabelKeys: Record<ResourceType, 'type.paper' | 'type.dataset' | 'type.book' | 'type.tutorial'> = {
@@ -16,12 +18,21 @@ export function HistoryPage() {
   const { t } = useT()
   const { history, removeItem, clearHistory } = useReadingHistory()
 
-  const historyWithResources = history
-    .map((item) => {
-      const resource = resources.find((r) => r.id === item.resourceId)
-      return { ...item, resource }
-    })
-    .filter((item) => item.resource)
+  const ids = useMemo(() => history.map((item) => item.resourceId), [history])
+  const { resources, loading } = useResources({
+    filters: { ids, limit: 500 },
+    enabled: ids.length > 0,
+  })
+
+  const resourceMap = useMemo(() => new Map(resources.map((r) => [r.id, r])), [resources])
+
+  const historyWithResources = useMemo(
+    () =>
+      history
+        .map((item) => ({ ...item, resource: resourceMap.get(item.resourceId) }))
+        .filter((item) => item.resource),
+    [history, resourceMap]
+  )
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp)
@@ -62,7 +73,7 @@ export function HistoryPage() {
         )}
       </header>
 
-      {historyWithResources.length === 0 ? (
+      {history.length === 0 ? (
         <div className="mt-20 text-center">
           <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-ink-soft/10 mb-8">
             <Clock className="text-ink-mute" size={40} />
@@ -75,6 +86,16 @@ export function HistoryPage() {
           >
             {t('home.featured.viewAll')} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
           </Link>
+        </div>
+      ) : loading ? (
+        <section className="mt-10 space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </section>
+      ) : historyWithResources.length === 0 ? (
+        <div className="mt-20 text-center">
+          <p className="text-2xl font-semibold text-ink">{t('history.empty.title')}</p>
         </div>
       ) : (
         <section className="mt-10 space-y-3">

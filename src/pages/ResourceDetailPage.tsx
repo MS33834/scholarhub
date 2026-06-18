@@ -9,11 +9,13 @@ import {
   Copy,
   Download,
 } from 'lucide-react'
-import { resources } from '@/data/resources'
-import { useFavorites, useUI } from '@/store'
-import { useReadingHistory } from '@/store/readingHistory'
+import { useUI } from '@/store'
+import { useFavorites } from '@/hooks/useFavorites'
+import { useReadingHistory } from '@/hooks/useReadingHistory'
 import { useT } from '@/i18n/useLang'
 import { ResourceCard } from '@/components/ResourceCard'
+import { Skeleton } from '@/components/Skeleton'
+import { useResource, useResources } from '@/hooks/useResources'
 import { formatAuthors, formatNumber } from '@/utils/format'
 import type { ResourceType } from '@/types'
 
@@ -41,44 +43,66 @@ const citeDisplay: Record<'apa' | 'mla' | 'gbt' | 'bibtex', string> = {
 export function ResourceDetailPage() {
   const { id } = useParams<{ id: string }>()
   const showToast = useUI((s) => s.showToast)
-  const isFav = useFavorites((s) => s.ids.includes(id ?? ''))
-  const toggleFav = useFavorites((s) => s.toggle)
+  const { ids, toggle: toggleFav } = useFavorites()
+  const isFav = ids.includes(id ?? '')
+  const { addVisit } = useReadingHistory()
   const { t } = useT()
   const [showAbstract, setShowAbstract] = useState(true)
   const [showAllCites, setShowAllCites] = useState(false)
-  const addVisit = useReadingHistory((s) => s.addVisit)
 
-  const resource = resources.find((r) => r.id === id)
+  const { resource, loading, error } = useResource(id)
+  const { resources: relatedCandidates } = useResources({
+    filters: { limit: 50 },
+    enabled: Boolean(resource),
+  })
 
   // 记录阅读历史
   useEffect(() => {
-    if (resource && id) {
-      addVisit(id, resource.title, resource.authors)
+    if (!resource || !id) return
+    let cancelled = false
+    addVisit(id, resource.title, resource.authors).catch(() => {
+      if (!cancelled) {
+        // History recording is best-effort; do not block the UI.
+      }
+    })
+    return () => {
+      cancelled = true
     }
   }, [id, resource, addVisit])
 
   const { related, citeFormats } = useMemo(() => {
     if (!resource) return { related: [], citeFormats: [] }
-    
-    const rel = resources
+
+    const rel = relatedCandidates
       .filter((r) => r.id !== resource.id && (r.discipline === resource.discipline || r.tags.some((tag) => resource.tags.includes(tag))))
       .slice(0, 3)
-    
+
     const formats = [
       { kind: 'apa' as const, text: resource.citation.apa },
       { kind: 'mla' as const, text: resource.citation.mla },
       { kind: 'gbt' as const, text: resource.citation.gbt },
       { kind: 'bibtex' as const, text: resource.citation.bibtex },
     ]
-    
-    return { related: rel, citeFormats: formats }
-  }, [resource])
 
-  if (!resource) {
+    return { related: rel, citeFormats: formats }
+  }, [resource, relatedCandidates])
+
+  if (loading) {
+    return (
+      <div className="page-fade mx-auto max-w-column px-6 sm:px-8 pt-12 pb-32">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="mt-8 h-16 w-full" />
+        <Skeleton className="mt-4 h-6 w-2/3" />
+        <Skeleton className="mt-12 h-48 w-full" />
+      </div>
+    )
+  }
+
+  if (error || !resource) {
     return (
       <div className="page-fade mx-auto max-w-column px-6 sm:px-8 py-32 text-center">
         <h1 className="text-3xl font-bold text-ink">{t('detail.notFound.title')}</h1>
-        <p className="mt-3 text-lg text-ink-soft">{t('detail.notFound.body')}</p>
+        <p className="mt-3 text-lg text-ink-soft">{error || t('detail.notFound.body')}</p>
         <Link
           to="/resources"
           className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-ink-soft hover:text-moss transition-colors group"
@@ -89,11 +113,15 @@ export function ResourceDetailPage() {
     )
   }
 
-  const onFav = () => {
+  const onFav = async () => {
     if (!id) return
     const wasFav = isFav
-    toggleFav(id)
-    showToast(wasFav ? t('toast.fav.removed') : t('toast.fav.added'))
+    try {
+      await toggleFav(id)
+      showToast(wasFav ? t('toast.fav.removed') : t('toast.fav.added'))
+    } catch {
+      showToast(t('common.errorBody'))
+    }
   }
 
   const copy = async (kind: 'apa' | 'mla' | 'gbt' | 'bibtex', text: string) => {

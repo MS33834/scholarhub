@@ -1,32 +1,42 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
+from app.core.config import settings
+from app.core.limiter import rate_limit
 from app.db.session import get_db
 from app.models.models import Favorite, Resource, User
+from app.schemas import FavoriteCreateResponse, FavoriteListResponse, ResourceResponse
 
 router = APIRouter(prefix="/favorites", tags=["favorites"])
 
 
-@router.get("/")
+@router.get("/", response_model=FavoriteListResponse)
+@rate_limit(f"{settings.rate_limit_per_minute}/minute")
 async def get_favorites(
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(Favorite).where(Favorite.user_id == current_user.id))
     favorites = result.scalars().all()
 
     resource_ids = [f.resource_id for f in favorites]
     if not resource_ids:
-        return {"favorites": []}
+        return FavoriteListResponse(favorites=[])
 
     result = await db.execute(select(Resource).where(Resource.id.in_(resource_ids)))
     resources = result.scalars().all()
-    return {"favorites": resources}
+    return FavoriteListResponse(favorites=[ResourceResponse.model_validate(r) for r in resources])
 
 
-@router.post("/{resource_id}", status_code=201)
+@router.post(
+    "/{resource_id}", status_code=status.HTTP_201_CREATED, response_model=FavoriteCreateResponse
+)
+@rate_limit("30/minute")
 async def add_favorite(
+    request: Request,
     resource_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -34,7 +44,7 @@ async def add_favorite(
     # Check if resource exists
     result = await db.execute(select(Resource).where(Resource.id == resource_id))
     if not result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Resource not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
 
     # Check if already favorited
     result = await db.execute(
@@ -43,16 +53,18 @@ async def add_favorite(
         )
     )
     if result.scalar_one_or_none():
-        return {"message": "Already favorited"}
+        return FavoriteCreateResponse(message="Already favorited")
 
     favorite = Favorite(user_id=current_user.id, resource_id=resource_id)
     db.add(favorite)
     await db.commit()
-    return {"message": "Added to favorites"}
+    return FavoriteCreateResponse(message="Added to favorites")
 
 
-@router.delete("/{resource_id}", status_code=204)
+@router.delete("/{resource_id}", status_code=status.HTTP_204_NO_CONTENT)
+@rate_limit("30/minute")
 async def remove_favorite(
+    request: Request,
     resource_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -64,7 +76,7 @@ async def remove_favorite(
     )
     favorite = result.scalar_one_or_none()
     if not favorite:
-        raise HTTPException(status_code=404, detail="Favorite not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Favorite not found")
 
     await db.delete(favorite)
     await db.commit()

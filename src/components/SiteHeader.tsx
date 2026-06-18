@@ -1,14 +1,16 @@
 import { NavLink, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { Search, Languages } from 'lucide-react'
+import { Search, Languages, User, LogIn, LogOut, Shield } from 'lucide-react'
 import { useUI } from '@/store'
 import { useT } from '@/i18n/useLang'
+import { useAuth } from '@/store/authStore'
 
 export function SiteHeader() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const showToast = useUI((s) => s.showToast)
   const { t, lang, toggleLang } = useT()
+  const { user, isAuthenticated, logout } = useAuth()
   const [q, setQ] = useState('')
 
   // Sync search box with ?q= from any page
@@ -16,7 +18,6 @@ export function SiteHeader() {
     const v = searchParams.get('q') ?? ''
     // Guarded setState: only updates when the URL param differs from local input,
     // so no cascading render occurs in practice.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setQ((prev) => (prev === v ? prev : v))
   }, [searchParams])
 
@@ -77,6 +78,48 @@ export function SiteHeader() {
               <Languages size={16} />
               <span>{lang === 'en' ? 'EN' : '中'}</span>
             </button>
+
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                {user?.isAdmin && (
+                  <Link
+                    to="/admin"
+                    className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-moss border border-rule rounded-lg px-3 py-2 hover:border-moss/50 transition-all"
+                    title={t('profile.adminPanel')}
+                  >
+                    <Shield size={16} />
+                    <span>{t('profile.adminPanel')}</span>
+                  </Link>
+                )}
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-moss border border-rule rounded-lg px-3 py-2 hover:border-moss/50 transition-all"
+                  title={t('profile.user')}
+                >
+                  <User size={16} />
+                  <span className="hidden sm:inline">{user?.username}</span>
+                </Link>
+                <button
+                  onClick={() => {
+                    logout()
+                    navigate('/')
+                  }}
+                  className="flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-ochre border border-rule rounded-lg px-3 py-2 hover:border-ochre/50 transition-all"
+                  title={t('profile.logout')}
+                >
+                  <LogOut size={16} />
+                  <span className="hidden sm:inline">{t('profile.logout')}</span>
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-moss border border-rule rounded-lg px-3 py-2 hover:border-moss/50 transition-all"
+              >
+                <LogIn size={16} />
+                <span>{t('auth.login.submit')}</span>
+              </Link>
+            )}
           </div>
         </div>
 

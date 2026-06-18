@@ -1,11 +1,11 @@
 import { create } from 'zustand';
-import { api } from '../services/api';
+import { api } from '@/lib/api';
 
 interface User {
   id: number;
   email: string;
   username: string;
-  is_admin: boolean;
+  isAdmin: boolean;
 }
 
 interface AuthState {
@@ -24,26 +24,26 @@ export const useAuth = create<AuthState>((set) => ({
   isLoading: true,
 
   login: async (username, password) => {
-    const result = await api.login(username, password);
+    const result = await api.login({ username, password });
     set({
       user: {
-        id: result.user_id,
+        id: result.userId,
         email: '',
         username: result.username,
-        is_admin: result.is_admin,
+        isAdmin: result.isAdmin,
       },
       isAuthenticated: true,
     });
   },
 
   register: async (email, username, password) => {
-    const result = await api.register(email, username, password);
+    const result = await api.register({ email, username, password });
     set({
       user: {
-        id: result.user_id,
+        id: result.userId,
         email,
         username: result.username,
-        is_admin: result.is_admin,
+        isAdmin: result.isAdmin,
       },
       isAuthenticated: true,
     });
@@ -65,6 +65,17 @@ export const useAuth = create<AuthState>((set) => ({
       const user = await api.getMe();
       set({ user, isAuthenticated: true, isLoading: false });
     } catch {
+      // Access token may have expired; try to refresh silently once.
+      const refreshed = await api.refresh();
+      if (refreshed) {
+        try {
+          const user = await api.getMe();
+          set({ user, isAuthenticated: true, isLoading: false });
+          return;
+        } catch {
+          // Fall through to logout.
+        }
+      }
       api.logout();
       set({ user: null, isAuthenticated: false, isLoading: false });
     }

@@ -1,27 +1,31 @@
 import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { resources } from '@/data/resources'
 import { disciplineMap } from '@/data/disciplines'
 import { useT } from '@/i18n/useLang'
 import { ResourceCard } from '@/components/ResourceCard'
+import { Skeleton } from '@/components/Skeleton'
 import { formatNumber } from '@/utils/format'
+import { useResources } from '@/hooks/useResources'
 import type { Discipline } from '@/types'
 
 export function DisciplinePage() {
   const { slug } = useParams<{ slug: string }>()
   const { t, lang } = useT()
-
   const discipline = disciplineMap[slug as Discipline]
 
-  const { list, yearSpan, subdisciplines } = useMemo(() => {
-    if (!discipline) return { list: [], yearSpan: '—', subdisciplines: [] }
-    const filtered = resources.filter((r) => r.discipline === discipline.slug)
-    const years = filtered.map((r) => r.year)
+  const { resources: list, loading } = useResources({
+    filters: { discipline: slug },
+    enabled: Boolean(discipline),
+  })
+
+  const stats = useMemo(() => {
+    if (!discipline) return { count: 0, subdisciplines: [] as string[], yearSpan: '—' }
+    const years = list.map((r) => r.year)
     const span = years.length ? `${Math.min(...years)} – ${Math.max(...years)}` : '—'
-    const subs = Array.from(new Set(filtered.map((r) => r.subdiscipline).filter(Boolean)))
-    return { list: filtered, yearSpan: span, subdisciplines: subs }
-  }, [discipline])
+    const subs = Array.from(new Set(list.map((r) => r.subdiscipline).filter(Boolean)))
+    return { count: list.length, subdisciplines: subs, yearSpan: span }
+  }, [discipline, list])
 
   if (!discipline) {
     return (
@@ -68,23 +72,29 @@ export function DisciplinePage() {
           <p className="text-sm font-medium text-ink-mute">
             {t('resources.title')}
           </p>
-          <p className="mt-2 text-3xl font-bold text-ink">{formatNumber(list.length)}</p>
+          <p className="mt-2 text-3xl font-bold text-ink">{loading ? '…' : formatNumber(stats.count)}</p>
         </div>
         <div className="px-2 border-l border-rule">
           <p className="text-sm font-medium text-ink-mute">
             {t('discipline.subdisciplines')}
           </p>
-          <p className="mt-2 text-3xl font-bold text-ink">{formatNumber(subdisciplines.length)}</p>
+          <p className="mt-2 text-3xl font-bold text-ink">{loading ? '…' : formatNumber(stats.subdisciplines.length)}</p>
         </div>
         <div className="px-2 border-l border-rule">
           <p className="text-sm font-medium text-ink-mute">
             {t('discipline.yearSpan')}
           </p>
-          <p className="mt-2 text-2xl font-bold text-ink">{yearSpan}</p>
+          <p className="mt-2 text-2xl font-bold text-ink">{loading ? '…' : stats.yearSpan}</p>
         </div>
       </section>
 
-      {list.length === 0 ? (
+      {loading ? (
+        <section className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-64" />
+          ))}
+        </section>
+      ) : list.length === 0 ? (
         <div className="mt-16 text-center">
           <p className="text-2xl font-semibold text-ink">{t('discipline.empty')}</p>
         </div>

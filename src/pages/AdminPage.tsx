@@ -2,9 +2,44 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n/useLang';
-import { api } from '../services/api';
-import { Plus, Edit, Trash2, Save, X } from 'lucide-react';
-import type { Resource } from '../types';
+import { api } from '@/lib/api';
+import { Plus, Edit, Trash2, Save, X, Trash } from 'lucide-react';
+import type { Resource, Citation } from '../types';
+
+const EMPTY_CITATION: Citation = {
+  apa: '',
+  mla: '',
+  gbt: '',
+  bibtex: '',
+};
+
+const EMPTY_FORM: Partial<Resource> = {
+  id: '',
+  title: '',
+  type: 'paper',
+  year: new Date().getFullYear(),
+  discipline: 'computer-science',
+  subdiscipline: '',
+  authors: [''],
+  tags: [''],
+  venue: '',
+  abstract: '',
+  preview: '',
+  doi: '',
+  downloadUrl: '',
+  externalUrl: '',
+  citation: EMPTY_CITATION,
+  citations: 0,
+};
+
+function getInitialForm(resource?: Resource | null): Partial<Resource> {
+  if (!resource) return EMPTY_FORM;
+  return {
+    ...resource,
+    citation: resource.citation ?? EMPTY_CITATION,
+    citations: resource.citations ?? 0,
+  };
+}
 
 export function AdminPage() {
   const { user } = useAuth();
@@ -14,22 +49,12 @@ export function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Partial<Resource>>({
-    id: '',
-    title: '',
-    type: 'paper',
-    year: new Date().getFullYear(),
-    discipline: 'computer-science',
-    authors: [''],
-    tags: [''],
-    abstract: '',
-    preview: '',
-  });
+  const [formData, setFormData] = useState<Partial<Resource>>(EMPTY_FORM);
 
   const loadResources = async () => {
     try {
-      const result = await api.getResources({ limit: 100 });
-      setResources(result.resources || []);
+      const result = await api.listResources({ limit: 100 });
+      setResources(result.data || []);
     } catch (err) {
       console.error('Failed to load resources:', err);
     } finally {
@@ -38,26 +63,38 @@ export function AdminPage() {
   };
 
   useEffect(() => {
-    if (!user?.is_admin) {
+    if (!user?.isAdmin) {
       navigate('/');
       return;
     }
     // Data-fetching effect: setState calls inside loadResources are async (post-await)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadResources();
   }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const cleaned: Partial<Resource> = {
+      ...formData,
+      authors: (formData.authors ?? []).map((a) => a.trim()).filter(Boolean),
+      tags: (formData.tags ?? []).map((t) => t.trim()).filter(Boolean),
+      citation: {
+        apa: (formData.citation?.apa ?? '').trim(),
+        mla: (formData.citation?.mla ?? '').trim(),
+        gbt: (formData.citation?.gbt ?? '').trim(),
+        bibtex: (formData.citation?.bibtex ?? '').trim(),
+      },
+    };
+
     try {
       if (editingId) {
-        await api.updateResource(editingId, formData);
+        await api.updateResource(editingId, cleaned);
       } else {
-        await api.createResource(formData);
+        await api.createResource(cleaned);
       }
       setShowForm(false);
       setEditingId(null);
-      setFormData({ id: '', title: '', type: 'paper', year: new Date().getFullYear(), discipline: 'computer-science' });
+      setFormData(EMPTY_FORM);
       loadResources();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Operation failed');
@@ -65,7 +102,7 @@ export function AdminPage() {
   };
 
   const handleEdit = (resource: Resource) => {
-    setFormData(resource);
+    setFormData(getInitialForm(resource));
     setEditingId(resource.id);
     setShowForm(true);
   };
@@ -80,7 +117,7 @@ export function AdminPage() {
     }
   };
 
-  if (!user?.is_admin) return null;
+  if (!user?.isAdmin) return null;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -90,7 +127,7 @@ export function AdminPage() {
           onClick={() => {
             setShowForm(true);
             setEditingId(null);
-            setFormData({ id: '', title: '', type: 'paper', year: new Date().getFullYear(), discipline: 'computer-science' });
+            setFormData(EMPTY_FORM);
           }}
           className="bg-moss text-white px-4 py-2 rounded-lg hover:bg-moss/90 transition-colors flex items-center gap-2"
         >
@@ -104,8 +141,9 @@ export function AdminPage() {
           <h2 className="text-xl font-bold text-ink mb-4">
             {editingId ? t('admin.editResource') : t('admin.newResource')}
           </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Basic metadata */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-ink mb-2">ID</label>
                 <input
@@ -130,7 +168,7 @@ export function AdminPage() {
                   <option value="tutorial">Tutorial</option>
                 </select>
               </div>
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-ink mb-2">{t('admin.title')}</label>
                 <input
                   type="text"
@@ -145,12 +183,21 @@ export function AdminPage() {
                 <input
                   type="number"
                   value={formData.year}
-                  onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value, 10) || 0 })}
                   className="w-full px-3 py-2 border border-rule rounded-lg focus:outline-none focus:ring-2 focus:ring-moss"
                   required
                 />
               </div>
-              <div className="col-span-2">
+              <div>
+                <label className="block text-sm font-medium text-ink mb-2">{t('admin.venue')}</label>
+                <input
+                  type="text"
+                  value={formData.venue ?? ''}
+                  onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+                  className="w-full px-3 py-2 border border-rule rounded-lg focus:outline-none focus:ring-2 focus:ring-moss"
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-ink mb-2">{t('admin.discipline')}</label>
                 <input
                   type="text"
@@ -160,8 +207,186 @@ export function AdminPage() {
                   required
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-ink mb-2">{t('admin.subdiscipline')}</label>
+                <input
+                  type="text"
+                  value={formData.subdiscipline ?? ''}
+                  onChange={(e) => setFormData({ ...formData, subdiscipline: e.target.value })}
+                  className="w-full px-3 py-2 border border-rule rounded-lg focus:outline-none focus:ring-2 focus:ring-moss"
+                />
+              </div>
             </div>
-            <div className="flex gap-2">
+
+            {/* Authors */}
+            <div>
+              <label className="block text-sm font-medium text-ink mb-2">{t('admin.authors')}</label>
+              <div className="space-y-2">
+                {(formData.authors ?? ['']).map((author, idx) => (
+                  <div key={idx} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={author}
+                      onChange={(e) => {
+                        const next = [...(formData.authors ?? [''])];
+                        next[idx] = e.target.value;
+                        setFormData({ ...formData, authors: next });
+                      }}
+                      placeholder={t('admin.author')}
+                      className="flex-1 px-3 py-2 border border-rule rounded-lg focus:outline-none focus:ring-2 focus:ring-moss"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = (formData.authors ?? ['']).filter((_, i) => i !== idx);
+                        setFormData({ ...formData, authors: next.length ? next : [''] });
+                      }}
+                      className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      title={t('admin.remove')}
+                    >
+                      <Trash size={18} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, authors: [...(formData.authors ?? ['']), ''] })}
+                  className="text-sm text-moss hover:underline"
+                >
+                  + {t('admin.addAuthor')}
+                </button>
+              </div>
+            </div>
+
+            {/* Tags */}
+            <div>
+              <label className="block text-sm font-medium text-ink mb-2">{t('admin.tags')}</label>
+              <div className="space-y-2">
+                {(formData.tags ?? ['']).map((tag, idx) => (
+                  <div key={idx} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={tag}
+                      onChange={(e) => {
+                        const next = [...(formData.tags ?? [''])];
+                        next[idx] = e.target.value;
+                        setFormData({ ...formData, tags: next });
+                      }}
+                      placeholder={t('admin.tag')}
+                      className="flex-1 px-3 py-2 border border-rule rounded-lg focus:outline-none focus:ring-2 focus:ring-moss"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = (formData.tags ?? ['']).filter((_, i) => i !== idx);
+                        setFormData({ ...formData, tags: next });
+                      }}
+                      className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      title={t('admin.remove')}
+                    >
+                      <Trash size={18} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, tags: [...(formData.tags ?? []), ''] })}
+                  className="text-sm text-moss hover:underline"
+                >
+                  + {t('admin.addTag')}
+                </button>
+              </div>
+            </div>
+
+            {/* Links */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-ink mb-2">{t('admin.doi')}</label>
+                <input
+                  type="text"
+                  value={formData.doi ?? ''}
+                  onChange={(e) => setFormData({ ...formData, doi: e.target.value })}
+                  className="w-full px-3 py-2 border border-rule rounded-lg focus:outline-none focus:ring-2 focus:ring-moss"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-ink mb-2">{t('admin.downloadUrl')}</label>
+                <input
+                  type="url"
+                  value={formData.downloadUrl ?? ''}
+                  onChange={(e) => setFormData({ ...formData, downloadUrl: e.target.value })}
+                  className="w-full px-3 py-2 border border-rule rounded-lg focus:outline-none focus:ring-2 focus:ring-moss"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-ink mb-2">{t('admin.externalUrl')}</label>
+                <input
+                  type="url"
+                  value={formData.externalUrl ?? ''}
+                  onChange={(e) => setFormData({ ...formData, externalUrl: e.target.value })}
+                  className="w-full px-3 py-2 border border-rule rounded-lg focus:outline-none focus:ring-2 focus:ring-moss"
+                />
+              </div>
+            </div>
+
+            {/* Citations */}
+            <div>
+              <label className="block text-sm font-medium text-ink mb-2">{t('admin.citation')}</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(['apa', 'mla', 'gbt', 'bibtex'] as const).map((fmt) => (
+                  <div key={fmt} className="md:col-span-2">
+                    <label className="block text-xs font-medium text-ink-mute mb-1 uppercase">{t(`admin.citation.${fmt}`)}</label>
+                    <textarea
+                      value={formData.citation?.[fmt] ?? ''}
+                      onChange={(e) => {
+                        const next: Citation = { ...(formData.citation ?? EMPTY_CITATION), [fmt]: e.target.value };
+                        setFormData({ ...formData, citation: next });
+                      }}
+                      rows={fmt === 'bibtex' ? 4 : 2}
+                      className="w-full px-3 py-2 border border-rule rounded-lg focus:outline-none focus:ring-2 focus:ring-moss font-mono text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Abstract & Preview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-ink mb-2">{t('admin.abstract')}</label>
+                <textarea
+                  value={formData.abstract}
+                  onChange={(e) => setFormData({ ...formData, abstract: e.target.value })}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-rule rounded-lg focus:outline-none focus:ring-2 focus:ring-moss"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-ink mb-2">{t('admin.preview')}</label>
+                <textarea
+                  value={formData.preview}
+                  onChange={(e) => setFormData({ ...formData, preview: e.target.value })}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-rule rounded-lg focus:outline-none focus:ring-2 focus:ring-moss"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Citation count */}
+            <div>
+              <label className="block text-sm font-medium text-ink mb-2">{t('admin.citations')}</label>
+              <input
+                type="number"
+                min={0}
+                value={formData.citations ?? 0}
+                onChange={(e) => setFormData({ ...formData, citations: parseInt(e.target.value, 10) || 0 })}
+                className="w-full md:w-1/3 px-3 py-2 border border-rule rounded-lg focus:outline-none focus:ring-2 focus:ring-moss"
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
               <button
                 type="submit"
                 className="bg-moss text-white px-4 py-2 rounded-lg hover:bg-moss/90 transition-colors flex items-center gap-2"

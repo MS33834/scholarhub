@@ -35,11 +35,11 @@ export function ProfilePage() {
           <div className="flex items-center gap-3">
             <Shield size={20} className="text-moss" />
             <span className="text-ink">
-              {user.is_admin ? t('profile.admin') : t('profile.user')}
+              {user.isAdmin ? t('profile.admin') : t('profile.user')}
             </span>
           </div>
 
-          {user.is_admin && (
+          {user.isAdmin && (
             <button
               onClick={() => navigate('/admin')}
               className="w-full bg-ochre text-white py-2 rounded-lg hover:bg-ochre/90 transition-colors flex items-center justify-center gap-2"

@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react'
 import { ArrowRight, Search } from 'lucide-react'
 import { ResourceCard } from '@/components/ResourceCard'
 import { FilterChips } from '@/components/FilterChips'
-import { resources } from '@/data/resources'
-import { disciplines } from '@/data/disciplines'
+import { Skeleton } from '@/components/Skeleton'
+import { useResources, useDisciplines } from '@/hooks/useResources'
 import { useT } from '@/i18n/useLang'
 import type { ResourceType } from '@/types'
 
@@ -16,14 +16,17 @@ export function ResourcesPage() {
   const { t, lang } = useT()
   const [type, setType] = useState<TypeFilter>('all')
   const [discipline, setDiscipline] = useState<DisciplineFilter>('all')
+  const disciplines = useDisciplines()
 
-  const filtered = useMemo(() => {
-    return resources.filter((r) => {
-      if (type !== 'all' && r.type !== type) return false
-      if (discipline !== 'all' && r.discipline !== discipline) return false
-      return true
-    })
-  }, [type, discipline])
+  const filters = useMemo(
+    () => ({
+      type: type === 'all' ? undefined : type,
+      discipline: discipline === 'all' ? undefined : discipline,
+    }),
+    [type, discipline],
+  )
+
+  const { resources: filtered, loading, error, meta } = useResources({ filters })
 
   const typeOptions = typeOrder.map((tp) => ({ value: tp, label: t(`type.${tp}` as const) }))
   const disciplineOptions = disciplines.map((d) => ({
@@ -41,7 +44,7 @@ export function ResourcesPage() {
         <p className="mt-4 text-lg text-ink-soft">{t('resources.subtitle')}</p>
         <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-moss/10 text-moss rounded-md">
           <span className="text-sm font-medium">
-            {t('resources.summary', { n: filtered.length })}
+            {t('resources.summary', { n: meta?.total ?? filtered.length })}
           </span>
         </div>
       </header>
@@ -62,7 +65,21 @@ export function ResourcesPage() {
       </div>
 
       <section className="mt-10">
-        {filtered.length === 0 ? (
+        {loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-64" />
+            ))}
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="py-20 text-center text-ink-soft">
+            <p>{t('common.errorTitle')}: {error}</p>
+          </div>
+        )}
+
+        {!loading && !error && filtered.length === 0 && (
           <div className="py-20 text-center">
             <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-moss/10 mb-8">
               <Search className="text-moss" size={40} />
@@ -75,7 +92,9 @@ export function ResourcesPage() {
               {t('type.all')} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
-        ) : (
+        )}
+
+        {!loading && !error && filtered.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((r) => <ResourceCard key={r.id} resource={r} />)}
           </div>

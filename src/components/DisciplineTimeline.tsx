@@ -1,13 +1,9 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { resources } from '@/data/resources'
 import { useT } from '@/i18n/useLang'
+import { useResources } from '@/hooks/useResources'
+import { Skeleton } from '@/components/Skeleton'
 import type { Resource } from '@/types'
-
-interface TimelineItem {
-  year: number
-  resources: Resource[]
-}
 
 interface DisciplineTimelineProps {
   discipline: string
@@ -15,12 +11,14 @@ interface DisciplineTimelineProps {
 
 export function DisciplineTimeline({ discipline }: DisciplineTimelineProps) {
   const { t } = useT()
-  const timeline = useMemo(() => {
-    const filtered = resources.filter(r => r.discipline === discipline)
+  const { resources, loading } = useResources({
+    filters: { discipline, limit: 500 },
+    enabled: Boolean(discipline),
+  })
 
-    // Group resources by year
+  const timeline = useMemo(() => {
     const byYear = new Map<number, Resource[]>()
-    filtered.forEach(resource => {
+    resources.forEach((resource) => {
       const year = resource.year
       if (!byYear.has(year)) {
         byYear.set(year, [])
@@ -28,13 +26,20 @@ export function DisciplineTimeline({ discipline }: DisciplineTimelineProps) {
       byYear.get(year)!.push(resource)
     })
 
-    // Convert to sorted array
-    const timeline: TimelineItem[] = Array.from(byYear.entries())
-      .map(([year, resources]) => ({ year, resources }))
-      .sort((a, b) => b.year - a.year) // Most recent first
+    return Array.from(byYear.entries())
+      .map(([year, yearResources]) => ({ year, resources: yearResources }))
+      .sort((a, b) => b.year - a.year)
+  }, [resources])
 
-    return timeline
-  }, [discipline])
+  if (loading) {
+    return (
+      <div className="space-y-10">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-48" />
+        ))}
+      </div>
+    )
+  }
 
   if (timeline.length === 0) {
     return (
@@ -60,7 +65,7 @@ export function DisciplineTimeline({ discipline }: DisciplineTimelineProps) {
 
             {/* Resources for this year */}
             <div className="space-y-4">
-              {yearResources.map(resource => (
+              {yearResources.map((resource) => (
                 <Link
                   key={resource.id}
                   to={`/resource/${resource.id}`}

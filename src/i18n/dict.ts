@@ -236,6 +236,26 @@ export type Dict = {
   'admin.type': string
   'admin.year': string
   'admin.discipline': string
+  'admin.subdiscipline': string
+  'admin.venue': string
+  'admin.authors': string
+  'admin.author': string
+  'admin.addAuthor': string
+  'admin.tags': string
+  'admin.tag': string
+  'admin.addTag': string
+  'admin.doi': string
+  'admin.downloadUrl': string
+  'admin.externalUrl': string
+  'admin.citation': string
+  'admin.citation.apa': string
+  'admin.citation.mla': string
+  'admin.citation.gbt': string
+  'admin.citation.bibtex': string
+  'admin.abstract': string
+  'admin.preview': string
+  'admin.citations': string
+  'admin.remove': string
   'admin.save': string
   'admin.cancel': string
   'admin.loading': string
@@ -606,6 +626,26 @@ const en: Dict = {
   'admin.type': 'Type',
   'admin.year': 'Year',
   'admin.discipline': 'Discipline',
+  'admin.subdiscipline': 'Subdiscipline',
+  'admin.venue': 'Venue / Publisher',
+  'admin.authors': 'Authors',
+  'admin.author': 'Author',
+  'admin.addAuthor': 'Add author',
+  'admin.tags': 'Tags',
+  'admin.tag': 'Tag',
+  'admin.addTag': 'Add tag',
+  'admin.doi': 'DOI',
+  'admin.downloadUrl': 'Download URL',
+  'admin.externalUrl': 'External URL',
+  'admin.citation': 'Citation formats',
+  'admin.citation.apa': 'APA',
+  'admin.citation.mla': 'MLA',
+  'admin.citation.gbt': 'GB/T 7714',
+  'admin.citation.bibtex': 'BibTeX',
+  'admin.abstract': 'Abstract',
+  'admin.preview': 'Preview',
+  'admin.citations': 'Citation count',
+  'admin.remove': 'Remove',
   'admin.save': 'Save',
   'admin.cancel': 'Cancel',
   'admin.loading': 'Loading resources...',
@@ -908,6 +948,26 @@ const zh: Dict = {
   'admin.type': '类型',
   'admin.year': '年份',
   'admin.discipline': '学科',
+  'admin.subdiscipline': '子学科',
+  'admin.venue': '会议/期刊/出版社',
+  'admin.authors': '作者',
+  'admin.author': '作者',
+  'admin.addAuthor': '添加作者',
+  'admin.tags': '标签',
+  'admin.tag': '标签',
+  'admin.addTag': '添加标签',
+  'admin.doi': 'DOI',
+  'admin.downloadUrl': '下载链接',
+  'admin.externalUrl': '外部链接',
+  'admin.citation': '引用格式',
+  'admin.citation.apa': 'APA',
+  'admin.citation.mla': 'MLA',
+  'admin.citation.gbt': 'GB/T 7714',
+  'admin.citation.bibtex': 'BibTeX',
+  'admin.abstract': '摘要',
+  'admin.preview': '预览',
+  'admin.citations': '被引次数',
+  'admin.remove': '移除',
   'admin.save': '保存',
   'admin.cancel': '取消',
   'admin.loading': '加载资源中...',

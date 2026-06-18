@@ -1,47 +1,20 @@
-import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Search } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
-import { resources } from '@/data/resources'
 import { ResourceCard } from '@/components/ResourceCard'
+import { Skeleton } from '@/components/Skeleton'
 import { useT } from '@/i18n/useLang'
-
-const FIELDS_WEIGHT: Array<{ key: keyof (typeof resources)[number]; weight: number }> = [
-  { key: 'title', weight: 8 },
-  { key: 'venue', weight: 3 },
-  { key: 'authors', weight: 2 },
-  { key: 'tags', weight: 2 },
-  { key: 'subdiscipline', weight: 2 },
-  { key: 'abstract', weight: 1 },
-  { key: 'preview', weight: 1 },
-]
-
-function scoreResource(r: ReturnType<typeof resources.find>, q: string): number {
-  if (!r) return 0
-  const lower = q.toLowerCase()
-  let score = 0
-  for (const f of FIELDS_WEIGHT) {
-    const value = r[f.key]
-    if (!value) continue
-    const str = Array.isArray(value) ? value.join(' ') : String(value)
-    if (str.toLowerCase().includes(lower)) score += f.weight
-  }
-  return score
-}
+import { useResources } from '@/hooks/useResources'
 
 export function SearchPage() {
   const { t } = useT()
   const [params] = useSearchParams()
   const q = params.get('q')?.trim() ?? ''
 
-  const results = useMemo(() => {
-    if (!q) return []
-    return resources
-      .map((r) => ({ r, s: scoreResource(r, q) }))
-      .filter((x) => x.s > 0)
-      .sort((a, b) => b.s - a.s)
-      .map((x) => x.r)
-  }, [q])
+  const { resources: results, loading, error } = useResources({
+    filters: { q, limit: 200 },
+    enabled: Boolean(q),
+  })
 
   if (!q) {
     return (
@@ -68,12 +41,26 @@ export function SearchPage() {
         </h1>
         <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-moss/10 text-moss rounded-md">
           <span className="text-sm font-medium">
-            {t('search.results.count', { n: results.length })}
+            {loading ? '…' : t('search.results.count', { n: results.length })}
           </span>
         </div>
       </header>
 
-      {results.length === 0 ? (
+      {loading && (
+        <section className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-64" />
+          ))}
+        </section>
+      )}
+
+      {!loading && error && (
+        <div className="py-20 text-center">
+          <p className="text-ink-soft">{t('common.errorTitle')}: {error}</p>
+        </div>
+      )}
+
+      {!loading && !error && results.length === 0 && (
         <div className="py-20 text-center">
           <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-ink-soft/10 mb-8">
             <Search className="text-ink-mute" size={40} />
@@ -86,7 +73,9 @@ export function SearchPage() {
             {t('home.featured.viewAll')} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
-      ) : (
+      )}
+
+      {!loading && !error && results.length > 0 && (
         <section className="mt-10">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {results.map((r) => (

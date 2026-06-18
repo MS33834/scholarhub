@@ -1,0 +1,8 @@
+// Runtime configuration injected by the container entrypoint.
+// Do not edit directly; set SCHOLARHUB_* environment variables instead.
+window.__APP_CONFIG__ = {
+  apiUrl: "${SCHOLARHUB_API_URL}",
+  apiMode: "${SCHOLARHUB_API_MODE}",
+  routerMode: "${SCHOLARHUB_ROUTER_MODE}",
+  basePath: "${SCHOLARHUB_BASE_PATH}",
+};

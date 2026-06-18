@@ -99,16 +99,3 @@ export function validateResources(data: unknown): ValidationResult<z.infer<typeo
   }
 }
 
-// Validate and log errors (useful for development)
-export function validateAndLog(data: unknown, label = 'Resource'): boolean {
-  const result = validateResources(data)
-  if (!result.success) {
-    console.error(`❌ ${label} validation failed:`)
-    result.errors?.forEach(err => {
-      console.error(`  - ${err.path}: ${err.message}`)
-    })
-    return false
-  }
-  console.log(`✅ ${label} validation passed (${(data as unknown[]).length} items)`)
-  return true
-}
