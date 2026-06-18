@@ -97,10 +97,11 @@ function AppRoutes() {
  */
 const basePath = env.basePath === '/' ? undefined : env.basePath
 const Router = env.routerMode === 'hash' ? HashRouter : BrowserRouter
+const routerProps = env.routerMode === 'hash' ? {} : { basename: basePath }
 
 export default function App() {
   return (
-    <Router basename={basePath}>
+    <Router {...routerProps}>
       <AppRoutes />
     </Router>
   )
