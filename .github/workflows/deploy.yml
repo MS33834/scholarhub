@@ -2,6 +2,8 @@ name: Deploy GitHub Pages showcase
 
 # This workflow builds the static demo site for GitHub Pages only.
 # Server deployments are handled separately via Docker (see DEPLOY.md).
+#
+# Live demo: https://ms33834.github.io/scholarhub/
 
 on:
   push:
@@ -37,7 +39,7 @@ jobs:
         env:
           VITE_API_MODE: local
           VITE_ROUTER: hash
-          VITE_BASE_PATH: /scholarHUB
+          VITE_BASE_PATH: /scholarhub
         run: npm run build
 
       - name: Setup Pages

@@ -62,7 +62,7 @@ npm install
 npm run dev
 ```
 
-The site will be available at `http://localhost:5173/scholarHUB/`
+The site will be available at `http://localhost:5173/`
 
 ### Build
 
@@ -82,11 +82,18 @@ npm run lint
 src/
 ├── components/       # Reusable UI components
 ├── data/            # Resource and discipline data
+├── hooks/           # Domain-specific React hooks
 ├── i18n/            # Internationalization (EN/CN)
+├── lib/             # API facade, environment config
 ├── pages/           # Page components
 ├── store/           # Zustand state management
 ├── types/           # TypeScript type definitions
 └── utils/           # Utility functions
+
+backend/
+├── app/             # FastAPI application
+├── alembic/         # Database migrations
+└── scripts/         # Backup and maintenance scripts
 ```
 
 ## Code Style

@@ -1,5 +1,13 @@
 # ScholarHUB
 
+[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live-blue?logo=github)](https://ms33834.github.io/scholarhub/)
+[![CI](https://img.shields.io/badge/CI-passing-brightgreen?logo=githubactions)](https://github.com/MS33834/scholarhub/actions)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
+
 > An open shelf of papers, books, and datasets.
 >
 > A community-curated index of open academic resources, organised by discipline and topic.
@@ -168,6 +176,14 @@ curl -X POST http://localhost:8000/api/resources \
 
 # Visit http://localhost:8000/docs for full API documentation
 ```
+
+## Documentation
+
+- [Deployment guide](DEPLOY.md) — Docker Compose production setup, environment variables, backups
+- [Backend README](backend/README.md) — FastAPI backend setup and API overview
+- [Contributing](CONTRIBUTING.md) — How to add resources and develop locally
+- [Code of Conduct](CODE_OF_CONDUCT.md) — Community guidelines
+- [Security](SECURITY.md) — Reporting vulnerabilities
 
 ## License
 
