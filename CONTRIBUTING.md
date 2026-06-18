@@ -7,7 +7,7 @@ Thank you for your interest in contributing to ScholarHUB! This document provide
 ### Adding a New Resource
 
 1. **Fork the repository** and create a new branch
-2. **Edit `src/data/resources.ts`** and add your resource entry:
+2. **Edit `frontend/src/data/resources.ts`** and add your resource entry:
 
 ```typescript
 {

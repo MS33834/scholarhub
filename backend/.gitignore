@@ -6,3 +6,5 @@ dist/
 .env
 .venv/
 venv/
+*.db
+*.sqlite3

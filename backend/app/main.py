@@ -6,6 +6,7 @@ from slowapi.extension import _rate_limit_exceeded_handler
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api.auth import router as auth_router
+from app.api.disciplines import router as disciplines_router
 from app.api.favorites import router as favorites_router
 from app.api.history import router as history_router
 from app.api.resources import router as resources_router
@@ -62,6 +63,7 @@ if settings.is_production:
 # Routers
 app.include_router(auth_router, prefix="/api")
 app.include_router(resources_router, prefix="/api")
+app.include_router(disciplines_router, prefix="/api")
 app.include_router(favorites_router, prefix="/api")
 app.include_router(history_router, prefix="/api")
 

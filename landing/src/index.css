@@ -1,0 +1,157 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+:root {
+  --paper: #f8f6f1;
+  --ink: #1a1a1a;
+  --ink-soft: #3c3c3c;
+  --ink-mute: #6a6a6a;
+  --rule: #d8d4c7;
+  --moss: #2f4f3a;
+  --moss-soft: #5a7a64;
+  --ochre: #a86b3c;
+  --ochre-soft: #c89770;
+  --night: #15171a;
+  --night-paper: #1c1f23;
+  --night-ink: #e8e4d8;
+  --night-rule: #2f3338;
+
+  --motion-duration: 0.35s;
+  --motion-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+html.dark {
+  --paper: #15171a;
+  --ink: #e8e4d8;
+  --ink-soft: #c8c4b8;
+  --ink-mute: #8a8680;
+  --rule: #2f3338;
+  --moss: #7aa88a;
+  --moss-soft: #9fc4aa;
+  --ochre: #c89770;
+  --ochre-soft: #dcb898;
+}
+
+* {
+  border-color: var(--rule);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'EB Garamond', 'Noto Serif SC', Georgia, serif;
+  font-size: 18px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+::selection {
+  background: var(--moss);
+  color: var(--paper);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+}
+
+/* hairline rule */
+.rule {
+  height: 1px;
+  background: var(--rule);
+}
+
+/* tag capsule */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--ochre);
+  color: var(--ochre);
+  padding: 0.15rem 0.6rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+/* subtle hover underline */
+.link-underline {
+  position: relative;
+}
+
+.link-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  transition: width var(--motion-duration) var(--motion-ease);
+}
+
+.link-underline:hover::after {
+  width: 100%;
+}
+
+/* page fade-in */
+.fade-in {
+  animation: fadeIn 0.6s var(--motion-ease) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* focus */
+a:focus-visible,
+button:focus-visible {
+  outline: 1.5px solid var(--moss);
+  outline-offset: 3px;
+}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

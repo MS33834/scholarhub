@@ -1,0 +1,110 @@
+import { useMemo } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
+import { disciplineMap } from '@/data/disciplines'
+import { useT } from '@/i18n/useLang'
+import { ResourceCard } from '@/components/ResourceCard'
+import { Skeleton } from '@/components/Skeleton'
+import { formatNumber } from '@/utils/format'
+import { useResources } from '@/hooks/useResources'
+import type { Discipline } from '@/types'
+
+export function DisciplinePage() {
+  const { slug } = useParams<{ slug: string }>()
+  const { t, lang } = useT()
+  const discipline = disciplineMap[slug as Discipline]
+
+  const { resources: list, loading } = useResources({
+    filters: { discipline: slug },
+    enabled: Boolean(discipline),
+  })
+
+  const stats = useMemo(() => {
+    if (!discipline) return { count: 0, subdisciplines: [] as string[], yearSpan: '—' }
+    const years = list.map((r) => r.year)
+    const span = years.length ? `${Math.min(...years)} – ${Math.max(...years)}` : '—'
+    const subs = Array.from(new Set(list.map((r) => r.subdiscipline).filter(Boolean)))
+    return { count: list.length, subdisciplines: subs, yearSpan: span }
+  }, [discipline, list])
+
+  if (!discipline) {
+    return (
+      <div className="page-fade mx-auto max-w-column px-6 sm:px-8 py-32 text-center">
+        <h1 className="font-display text-3xl sm:text-4xl text-ink">{t('discipline.notFound.title')}</h1>
+        <p className="mt-3 text-lg text-ink-soft">{t('discipline.empty')}</p>
+        <Link
+          to="/"
+          className="mt-8 inline-flex items-center gap-2 text-sm text-ink-soft hover:text-moss transition-colors group"
+        >
+          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> {t('nav.home')}
+        </Link>
+      </div>
+    )
+  }
+
+  const name = lang === 'en' ? discipline.nameEn : discipline.name
+  const blurb = lang === 'en' ? discipline.blurbEn : discipline.blurb
+
+  return (
+    <div className="page-fade mx-auto max-w-column px-6 sm:px-8 pt-12 pb-32">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-2 text-sm text-ink-soft hover:text-moss transition-colors group"
+      >
+        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> {t('nav.home')}
+      </Link>
+
+      <header className="mt-8 border-b border-rule pb-10">
+        <div className="flex items-baseline gap-4">
+          <span className="text-mono text-[12px] uppercase tracking-wider2 text-ink-mute w-7 shrink-0">
+            {String(discipline.order).padStart(2, '0')}
+          </span>
+          <p className="text-mono text-[12px] uppercase tracking-wider2 text-moss">
+            {t('nav.resources')}
+          </p>
+        </div>
+        <h1 className="font-display mt-3 text-4xl sm:text-5xl lg:text-6xl text-ink leading-[1.1]">{name}</h1>
+        <p className="mt-4 text-lg leading-relaxed text-ink-soft max-w-2xl">{blurb}</p>
+      </header>
+
+      <section className="mt-10 grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 border-b border-rule pb-8">
+        <div className="px-2">
+          <p className="text-mono text-[11px] uppercase tracking-wider2 text-ink-mute">
+            {t('resources.title')}
+          </p>
+          <p className="mt-2 text-3xl font-bold text-ink">{loading ? '…' : formatNumber(stats.count)}</p>
+        </div>
+        <div className="px-2 border-l border-rule">
+          <p className="text-mono text-[11px] uppercase tracking-wider2 text-ink-mute">
+            {t('discipline.subdisciplines')}
+          </p>
+          <p className="mt-2 text-3xl font-bold text-ink">{loading ? '…' : formatNumber(stats.subdisciplines.length)}</p>
+        </div>
+        <div className="px-2 border-l border-rule">
+          <p className="text-mono text-[11px] uppercase tracking-wider2 text-ink-mute">
+            {t('discipline.yearSpan')}
+          </p>
+          <p className="mt-2 text-2xl font-bold text-ink">{loading ? '…' : stats.yearSpan}</p>
+        </div>
+      </section>
+
+      {loading ? (
+        <section className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-64" />
+          ))}
+        </section>
+      ) : list.length === 0 ? (
+        <div className="mt-16 text-center">
+          <p className="font-display text-2xl text-ink">{t('discipline.empty')}</p>
+        </div>
+      ) : (
+        <section className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {list.map((r) => (
+            <ResourceCard key={r.id} resource={r} showSummary />
+          ))}
+        </section>
+      )}
+    </div>
+  )
+}

@@ -154,9 +154,9 @@ See [DEPLOY.md](DEPLOY.md) for the complete Docker Compose setup, environment va
 
 ### Without backend (Demo mode)
 
-Resources are TypeScript files in `src/data/`. To add a new entry, edit
-`src/data/resources.ts` following the existing shape; bilingual strings
-live in `src/i18n/dict.ts`.
+Resources are TypeScript files in `frontend/src/data/`. To add a new entry, edit
+`frontend/src/data/resources.ts` following the existing shape; bilingual strings
+live in `frontend/src/i18n/dict.ts`.
 
 ### With backend (Production mode)
 

@@ -136,6 +136,18 @@ class ResourceStats(CamelBaseModel):
     by_discipline: dict[str, int]
 
 
+class DisciplineResponse(CamelBaseModel):
+    slug: str
+    name: str
+    name_en: str
+    description: str
+    resource_count: int = 0
+
+
+class DisciplineListResponse(CamelBaseModel):
+    data: list[DisciplineResponse]
+
+
 class FavoriteCreateResponse(CamelBaseModel):
     message: str
 
