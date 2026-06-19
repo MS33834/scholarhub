@@ -2,13 +2,17 @@
 @config "../tailwind.config.js";
 
 :root {
-  --paper: #f8f6f1;
-  --ink: #1a1a1a;
-  --ink-soft: #3c3c3c;
-  --ink-mute: #6a6a6a;
-  --rule: #d8d4c7;
-  --moss: #2f4f3a;
-  --ochre: #a86b3c;
+  --paper: #f7f4ed;
+  --ink: #1f1a14;
+  --ink-soft: #4a4238;
+  --ink-mute: #8a8070;
+  --rule: #e0d8c8;
+  --accent: #7a5c3c;
+  --accent-light: #b8976b;
+  --moss: #4a5d45;
+  --moss-soft: #7a9178;
+  --ochre: #a67c52;
+  --ochre-soft: #c9a67e;
   --night: #15171a;
   --night-ink: #e8e4d8;
   --night-rule: #2f3338;
@@ -23,8 +27,12 @@ html[data-theme='dark'] {
   --ink-soft: #c4c0b4;
   --ink-mute: #918d81;
   --rule: #2f3338;
+  --accent: #b8976b;
+  --accent-light: #d4b88a;
   --moss: #7c9a86;
+  --moss-soft: #9ab49e;
   --ochre: #c89770;
+  --ochre-soft: #dcb896;
 }
 
 html[data-motion='reduced'] {
@@ -60,7 +68,9 @@ html, body {
 
 body {
   margin: 0;
-  background: var(--paper);
+  background-color: var(--paper);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
   color: var(--ink);
   font-family: 'EB Garamond', 'Noto Serif SC', Georgia, 'Times New Roman', serif;
   font-size: 18px;
@@ -130,6 +140,37 @@ a:focus-visible {
 
 .indent-2em {
   text-indent: 2em;
+}
+
+.card-raised {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(31, 26, 20, 0.04), 0 2px 8px rgba(31, 26, 20, 0.06);
+  transition: transform var(--motion-duration) var(--motion-ease),
+    box-shadow var(--motion-duration) var(--motion-ease),
+    border-color var(--motion-duration) var(--motion-ease);
+}
+
+.card-raised:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(31, 26, 20, 0.08), 0 2px 4px rgba(31, 26, 20, 0.06);
+  border-color: var(--ink-mute);
+}
+
+.discipline-band {
+  position: relative;
+}
+
+.discipline-band::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--discipline-color, var(--moss));
+  border-radius: 0 2px 2px 0;
 }
 
 /* collapse / expand animation */

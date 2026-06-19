@@ -50,3 +50,10 @@ coverage/
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Vite cache
+.vite/
+
+# Local screenshots
+screenshots/
+

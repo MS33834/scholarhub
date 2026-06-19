@@ -40,6 +40,9 @@ const citeDisplay: Record<'apa' | 'mla' | 'gbt' | 'bibtex', string> = {
   bibtex: 'BibTeX',
 }
 
+const cardRaised =
+  'bg-paper border border-rule rounded-[2px] shadow-[0_2px_8px_rgba(31,26,20,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(31,26,20,0.08)]'
+
 export function ResourceDetailPage() {
   const { id } = useParams<{ id: string }>()
   const showToast = useUI((s) => s.showToast)
@@ -199,7 +202,7 @@ export function ResourceDetailPage() {
       </header>
 
       {/* 摘要折叠区 */}
-      <section className="mt-12 border-y border-rule">
+      <section className="mt-14 border-y border-rule">
         <button
           onClick={() => setShowAbstract((v) => !v)}
           className="w-full flex items-center justify-between py-5 text-left group"
@@ -213,12 +216,14 @@ export function ResourceDetailPage() {
         </button>
         <div className={`collapse-panel ${showAbstract ? 'is-open' : ''}`}>
           <div>
-            <p
-              className="font-serif text-lg leading-[1.8] text-ink-soft pb-8 indent-2em"
-              style={{ textAlign: 'justify' }}
-            >
-              {resource.abstract}
-            </p>
+            <div className="bg-rule/20 border-l-4 border-moss p-6 rounded-[2px]">
+              <p
+                className="font-serif text-lg leading-[1.8] text-ink-soft indent-2em"
+                style={{ textAlign: 'justify' }}
+              >
+                {resource.abstract}
+              </p>
+            </div>
           </div>
         </div>
         <div className="py-5 flex flex-wrap items-center gap-2 border-t border-rule">
@@ -237,7 +242,7 @@ export function ResourceDetailPage() {
       </section>
 
       {/* 操作区 - 4 按钮 */}
-      <section className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <section className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-3">
         {resource.downloadUrl && (
           <a
             href={resource.downloadUrl}
@@ -308,7 +313,7 @@ export function ResourceDetailPage() {
       )}
 
       {/* 引用区 */}
-      <section className="mt-16">
+      <section className="mt-20">
         <div className="flex items-center justify-between mb-6 border-b border-rule pb-3">
           <h2 className="font-display text-2xl text-ink">{t('detail.cite.title')}</h2>
           <span className="text-mono text-[12px] uppercase tracking-wider2 text-ink-mute">
@@ -320,7 +325,7 @@ export function ResourceDetailPage() {
             <button
               key={kind}
               onClick={() => copy(kind, resource.citation[kind])}
-              className="group flex items-center justify-center gap-2 border border-rule px-4 py-3.5 text-sm text-ink-soft transition-colors duration-200 hover:border-moss hover:text-moss"
+              className={`group flex items-center justify-center gap-2 px-4 py-3.5 text-sm text-ink-soft hover:text-moss ${cardRaised}`}
             >
               <Copy size={16} /> {t(citeKey[kind])}
             </button>
@@ -328,7 +333,7 @@ export function ResourceDetailPage() {
         </div>
         <button
           onClick={() => setShowAllCites((v) => !v)}
-          className="mt-5 inline-flex items-center gap-2 text-sm text-ink-soft hover:text-moss border-b border-ink-soft/50 hover:border-moss pb-0.5 transition-colors group"
+          className="mt-6 inline-flex items-center gap-2 text-sm text-ink-soft hover:text-moss border-b border-ink-soft/50 hover:border-moss pb-0.5 transition-colors group"
         >
           {t('detail.cite.previewAll')}
           <ChevronDown
@@ -339,11 +344,11 @@ export function ResourceDetailPage() {
         </button>
         <div className={`collapse-panel ${showAllCites ? 'is-open' : ''}`}>
           <div>
-            <div className="mt-5 space-y-4">
+            <div className="mt-6 space-y-5">
               {citeFormats.map(({ kind, text }) => (
                 <div
                   key={kind}
-                  className="group border border-rule p-5 transition-colors hover:border-moss/60"
+                  className={`group p-5 ${cardRaised}`}
                 >
                   <div className="flex items-center justify-between mb-3 pb-3 border-b border-rule">
                     <span className="text-mono text-[12px] uppercase tracking-wider2 text-moss">
@@ -368,7 +373,7 @@ export function ResourceDetailPage() {
 
       {/* 相关资源 */}
       {related.length > 0 && (
-        <section className="mt-20">
+        <section className="mt-24">
           <div className="flex items-center justify-between mb-6 border-b border-rule pb-3">
             <h2 className="font-display text-2xl text-ink">
               {t('detail.related.title')}

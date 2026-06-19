@@ -1,6 +1,6 @@
 import { NavLink, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { Search, Languages, User, LogIn, LogOut, Shield } from 'lucide-react'
+import { Search, User, LogOut, Shield } from 'lucide-react'
 import { useUI } from '@/store'
 import { useT } from '@/i18n/useLang'
 import { useAuth } from '@/store/authStore'
@@ -41,10 +41,26 @@ export function SiteHeader() {
     navigate(`/search?q=${encodeURIComponent(term)}`)
   }
 
+  const skipToMain = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+    const main = document.querySelector('main') as HTMLElement | null
+    if (!main) return
+    main.setAttribute('tabindex', '-1')
+    main.focus()
+  }
+
   return (
     <header className="sticky top-0 z-50 bg-paper border-b border-rule">
+      <a
+        href="#main-content"
+        onClick={skipToMain}
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:rounded-[2px] focus:bg-paper focus:px-4 focus:py-2 focus:text-sm focus:text-ink focus:outline focus:outline-[1.5px] focus:outline-moss focus:outline-offset-3"
+      >
+        Skip to main content
+      </a>
+
       <div className="mx-auto max-w-column px-6 sm:px-8">
-        <div className="flex items-center justify-between gap-6 py-4">
+        <div className="flex items-center justify-between gap-4 py-3">
           <Link to="/" className="flex items-baseline gap-3 group">
             <span className="font-display text-2xl text-ink">ScholarHUB</span>
             <span className="text-mono text-[11px] uppercase tracking-wider2 text-ink-mute border border-rule px-2 py-0.5 rounded-[2px]">
@@ -52,11 +68,11 @@ export function SiteHeader() {
             </span>
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <form
               onSubmit={onSubmit}
-              className="hidden sm:flex items-center gap-2 border border-rule rounded-[2px] px-3 py-2 bg-paper focus-within:border-moss transition-colors"
-              style={{ minWidth: 280 }}
+              className="hidden sm:flex items-center gap-2 border border-rule rounded-[2px] px-3 py-1.5 bg-paper focus-within:border-moss transition-colors"
+              style={{ minWidth: 260 }}
             >
               <Search size={16} className="text-ink-mute" />
               <input
@@ -71,66 +87,71 @@ export function SiteHeader() {
 
             <button
               onClick={toggleLang}
-              className="flex items-center gap-1.5 text-sm text-ink-soft hover:text-moss border border-rule rounded-[2px] px-3 py-2 hover:border-moss/60 transition-colors"
+              className="text-sm font-medium text-ink-soft hover:text-moss px-2 py-1 transition-colors"
               aria-label={lang === 'en' ? 'Switch to Chinese' : '切换到英文'}
               title={lang === 'en' ? 'Switch to 中文' : 'Switch to English'}
             >
-              <Languages size={16} />
-              <span>{lang === 'en' ? 'EN' : '中'}</span>
+              EN/中
             </button>
 
             {isAuthenticated ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center" aria-label={t('profile.user')}>
                 {user?.isAdmin && (
                   <Link
                     to="/admin"
-                    className="hidden sm:flex items-center gap-1.5 text-sm text-ink-soft hover:text-moss border border-rule rounded-[2px] px-3 py-2 hover:border-moss/60 transition-colors"
+                    className="p-2 text-ink-soft hover:text-moss transition-colors"
+                    aria-label={t('profile.adminPanel')}
                     title={t('profile.adminPanel')}
                   >
-                    <Shield size={16} />
-                    <span>{t('profile.adminPanel')}</span>
+                    <Shield size={20} />
                   </Link>
                 )}
                 <Link
                   to="/profile"
-                  className="flex items-center gap-1.5 text-sm text-ink-soft hover:text-moss border border-rule rounded-[2px] px-3 py-2 hover:border-moss/60 transition-colors"
+                  className="p-2 text-ink-soft hover:text-moss transition-colors"
+                  aria-label={t('profile.user')}
                   title={t('profile.user')}
                 >
-                  <User size={16} />
-                  <span className="hidden sm:inline">{user?.username}</span>
+                  <User size={20} />
                 </Link>
                 <button
                   onClick={() => {
                     logout()
                     navigate('/')
                   }}
-                  className="flex items-center gap-1.5 text-sm text-ink-soft hover:text-ochre border border-rule rounded-[2px] px-3 py-2 hover:border-ochre/60 transition-colors"
+                  className="p-2 text-ink-soft hover:text-ochre transition-colors"
+                  aria-label={t('profile.logout')}
                   title={t('profile.logout')}
                 >
-                  <LogOut size={16} />
-                  <span className="hidden sm:inline">{t('profile.logout')}</span>
+                  <LogOut size={20} />
                 </button>
               </div>
             ) : (
               <Link
                 to="/login"
-                className="flex items-center gap-1.5 text-sm text-ink-soft hover:text-moss border border-rule rounded-[2px] px-3 py-2 hover:border-moss/60 transition-colors"
+                className="p-2 text-ink-soft hover:text-moss transition-colors"
+                aria-label={t('auth.login.submit')}
+                title={t('auth.login.submit')}
               >
-                <LogIn size={16} />
-                <span>{t('auth.login.submit')}</span>
+                <User size={20} />
               </Link>
             )}
           </div>
         </div>
 
-        <nav className="flex items-center gap-6 sm:gap-8 pb-3 pt-1 text-sm overflow-x-auto scrollbar-hide">
+        <nav className="flex items-center gap-6 sm:gap-8 pb-2 pt-1 text-sm overflow-x-auto scrollbar-hide">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === '/'}
+              aria-current="page"
               className={({ isActive }) =>
-                `whitespace-nowrap text-ink-soft hover:text-ink transition-colors ${isActive ? 'text-moss' : ''}`
+                `whitespace-nowrap pb-0.5 border-b-[1.5px] transition-colors ${
+                  isActive
+                    ? 'text-moss border-moss'
+                    : 'text-ink-soft border-transparent hover:text-ink'
+                }`
               }
             >
               {t(item.key)}

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, Search } from 'lucide-react'
+import { ArrowRight, Search, SearchX } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { ResourceCard } from '@/components/ResourceCard'
 import { Skeleton } from '@/components/Skeleton'
@@ -20,9 +20,11 @@ export function SearchPage() {
     return (
       <div className="page-fade mx-auto max-w-column px-6 sm:px-8 pt-16 pb-32">
         <div className="py-20 text-center">
-          <Search className="mx-auto text-ink-mute mb-6" size={40} strokeWidth={1} />
-          <h1 className="font-display text-3xl sm:text-4xl text-ink">{t('search.empty.title')}</h1>
-          <p className="mt-4 text-lg text-ink-soft max-w-md mx-auto">{t('search.empty.body')}</p>
+          <div className="inline-flex flex-col items-center rounded-[2px] border border-rule bg-paper px-10 py-12">
+            <Search className="text-ink-mute mb-6" size={40} strokeWidth={1} />
+            <h1 className="font-display text-3xl sm:text-4xl text-ink">{t('search.empty.title')}</h1>
+            <p className="mt-4 text-lg text-ink-soft max-w-md mx-auto">{t('search.empty.body')}</p>
+          </div>
         </div>
       </div>
     )
@@ -34,12 +36,14 @@ export function SearchPage() {
         <p className="text-mono text-[12px] uppercase tracking-wider2 text-moss mb-3">
           {t('home.hero.eyebrow')}
         </p>
-        <h1 className="font-display text-4xl sm:text-5xl text-ink">
-          {t('search.results.title', { q })}
-        </h1>
-        <p className="mt-4 text-mono text-[12px] uppercase tracking-wider2 text-ink-mute">
-          {loading ? '…' : t('search.results.count', { n: results.length })}
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3">
+          <h1 className="font-display text-4xl sm:text-5xl text-ink">
+            {t('search.results.title', { q })}
+          </h1>
+          <span className="text-mono text-[12px] uppercase tracking-wider2 text-ink-mute">
+            {loading ? '…' : t('search.results.count', { n: results.length })}
+          </span>
+        </div>
       </header>
 
       {loading && (
@@ -57,15 +61,17 @@ export function SearchPage() {
       )}
 
       {!loading && !error && results.length === 0 && (
-        <div className="py-20 text-center">
-          <Search className="mx-auto text-ink-mute mb-6" size={40} strokeWidth={1} />
-          <p className="font-display text-3xl text-ink">{t('search.noResults', { q })}</p>
-          <Link
-            to="/resources"
-            className="mt-8 inline-flex items-center gap-2 text-sm text-ink-soft hover:text-moss transition-colors group"
-          >
-            {t('home.featured.viewAll')} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-          </Link>
+        <div className="py-16 text-center">
+          <div className="inline-flex flex-col items-center rounded-[2px] border border-rule bg-paper px-10 py-12">
+            <SearchX className="text-ink-mute mb-5" size={40} strokeWidth={1} />
+            <p className="font-display text-3xl text-ink">{t('search.noResults', { q })}</p>
+            <Link
+              to="/resources"
+              className="mt-8 inline-flex items-center gap-2 text-sm text-ink-soft hover:text-moss transition-colors group"
+            >
+              {t('home.featured.viewAll')} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
         </div>
       )}
 

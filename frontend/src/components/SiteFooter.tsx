@@ -19,11 +19,18 @@ function GithubMark({ size = 16 }: { size?: number }) {
 export function SiteFooter() {
   const { t } = useT()
   const year = new Date().getFullYear()
+
+  const labelClass =
+    'text-mono text-[11px] tracking-wider2 text-ink-mute mb-4'
+
   return (
     <footer className="border-t border-rule mt-32 bg-paper">
       <div className="mx-auto max-w-column px-6 sm:px-8 py-16">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-12">
           <div>
+            <p className={labelClass} style={{ fontVariant: 'small-caps' }}>
+              About
+            </p>
             <p className="font-display text-2xl text-ink mb-3">ScholarHUB</p>
             <p className="text-mono text-[11px] uppercase tracking-wider2 text-ink-mute border border-rule px-2 py-0.5 rounded-[2px] inline-block mb-4">
               {t('brand.volume')}
@@ -32,11 +39,12 @@ export function SiteFooter() {
               {t('brand.tagline')}
             </p>
           </div>
+
           <div>
-            <p className="text-mono text-[11px] uppercase tracking-wider2 text-ink-mute mb-4">
-              {t('footer.section.navigation')}
+            <p className={labelClass} style={{ fontVariant: 'small-caps' }}>
+              Browse
             </p>
-            <ul className="space-y-3 text-sm text-ink-soft">
+            <ul className="space-y-2.5 text-sm text-ink-soft">
               <li>
                 <Link to="/resources" className="hover:text-moss transition-colors">
                   {t('footer.link.resources')}
@@ -69,17 +77,30 @@ export function SiteFooter() {
               </li>
             </ul>
           </div>
+
           <div>
-            <p className="text-mono text-[11px] uppercase tracking-wider2 text-ink-mute mb-4">
-              {t('footer.section.contribute')}
+            <p className={labelClass} style={{ fontVariant: 'small-caps' }}>
+              Connect
             </p>
-            <ul className="space-y-3 text-sm text-ink-soft">
+            <ul className="space-y-2.5 text-sm text-ink-soft">
+              <li>
+                <a
+                  className="inline-flex items-center gap-1.5 hover:text-moss transition-colors group"
+                  href="https://github.com/MS33834/scholarhub"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  <GithubMark size={16} />
+                  {t('footer.link.github')}
+                  <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </a>
+              </li>
               <li>
                 <a
                   className="inline-flex items-center gap-1.5 hover:text-moss transition-colors group"
                   href="https://github.com/MS33834/scholarhub/blob/main/CONTRIBUTING.md"
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noreferrer noopener"
                 >
                   {t('footer.link.contributing')}
                   <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -90,27 +111,16 @@ export function SiteFooter() {
                   className="inline-flex items-center gap-1.5 hover:text-moss transition-colors group"
                   href="https://github.com/MS33834/scholarhub/issues"
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noreferrer noopener"
                 >
                   {t('footer.link.submit')}
-                  <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                </a>
-              </li>
-              <li>
-                <a
-                  className="inline-flex items-center gap-1.5 hover:text-moss transition-colors group"
-                  href="https://github.com/MS33834/scholarhub"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <GithubMark size={16} />
-                  {t('footer.link.github')}
                   <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                 </a>
               </li>
             </ul>
           </div>
         </div>
+
         <div className="mt-16 pt-8 border-t border-rule flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-ink-mute">
             {t('footer.copyright', { year })}

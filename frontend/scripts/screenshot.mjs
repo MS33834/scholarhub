@@ -12,7 +12,7 @@ const page = await context.newPage()
 const routes = [
   { path: '/', name: 'home' },
   { path: '/resources', name: 'resources' },
-  { path: '/resource/attention-is-all-you-need-2017', name: 'detail' },
+  { path: '/resource/attention-is-all-you-need', name: 'detail' },
   { path: '/search?q=learning', name: 'search' },
   { path: '/settings', name: 'settings' },
   { path: '/about', name: 'about' },
