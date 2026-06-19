@@ -83,8 +83,12 @@ This runs the frontend with local data only (no backend required).
 
 ```bash
 cd backend
-pip install -e .
-python -m app.db.init  # Initialize database
+pip install -e ".[dev]"
+
+# Ensure PostgreSQL is running and the database exists, then:
+python -m app.db.init          # Run Alembic migrations + create admin user
+python scripts/seed.py         # (Optional) insert sample resources
+
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -92,7 +96,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ```bash
 # In another terminal
-export VITE_API_URL=http://localhost:8000/api
+cp .env.example .env           # Or set VITE_* variables directly
 npm run dev
 ```
 
