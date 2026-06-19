@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
 import { Loader2, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react'
 import { useT } from '@/i18n/useLang'
@@ -24,7 +24,7 @@ export function PDFViewer({ url, isOpen, onClose }: PDFViewerProps) {
   const pdfDocRef = useRef<any>(null)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const renderPage = async (pdf: any, pageNum: number, currentScale: number) => {
+  const renderPage = useCallback(async (pdf: any, pageNum: number, currentScale: number) => {
     if (!canvasRef.current) return
 
     try {
@@ -44,8 +44,9 @@ export function PDFViewer({ url, isOpen, onClose }: PDFViewerProps) {
       }).promise
     } catch (err) {
       console.error('Page rendering error:', err)
+      setError(t('pdf.error'))
     }
-  }
+  }, [t])
 
   useEffect(() => {
     if (!isOpen || !url) return
@@ -77,14 +78,13 @@ export function PDFViewer({ url, isOpen, onClose }: PDFViewerProps) {
         pdfDocRef.current = null
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, url])
+  }, [isOpen, url, renderPage, scale])
 
   useEffect(() => {
     if (pdfDocRef.current && currentPage > 0) {
       renderPage(pdfDocRef.current, currentPage, scale)
     }
-  }, [scale, currentPage])
+  }, [scale, currentPage, renderPage])
 
   const goToPage = async (pageNum: number) => {
     if (!pdfDocRef.current || pageNum < 1 || pageNum > totalPages) return
