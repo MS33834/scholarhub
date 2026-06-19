@@ -78,7 +78,7 @@ export function PDFViewer({ url, isOpen, onClose }: PDFViewerProps) {
         pdfDocRef.current = null
       }
     }
-  }, [isOpen, url, renderPage, scale])
+  }, [isOpen, url, renderPage, scale, t])
 
   useEffect(() => {
     if (pdfDocRef.current && currentPage > 0) {
