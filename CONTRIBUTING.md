@@ -1,3 +1,14 @@
+## 仓库说明
+
+**本仓库以 GitHub 为主仓，GitCode 为镜像。**
+
+- 主仓库地址：https://github.com/MS33834/scholarhub
+- GitCode 镜像：https://gitcode.com/badhope/scholarhub
+
+请直接在 **GitHub 主仓** 提交 Issue 和 Pull Request。GitCode 仅用于代码镜像，不处理 Issue/PR。
+
+---
+
 # Contributing to ScholarHUB
 
 Thank you for your interest in contributing to ScholarHUB! This document provides guidelines and information for contributors.
