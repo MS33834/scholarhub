@@ -11,11 +11,11 @@ import { useReadingHistory } from '@/store/readingHistory'
 import { useResources } from '@/hooks/useResources'
 
 const featuredIds = [
-  'attention-is-all-you-need',
-  'goodfellow-deep-learning-2016',
-  'mnist-handwritten-digit-database',
-  'rudin-principles-mathematical-analysis',
-  'watson-crick-dna-1953',
+  'attention-is-all-you-need-2017',
+  'deep-learning-goodfellow-2016',
+  'mnist-dataset-lecun-1998',
+  'linear-algebra-done-right-axler-2015',
+  'molecular-biology-of-the-cell-2014',
 ]
 
 export function HomePage() {
