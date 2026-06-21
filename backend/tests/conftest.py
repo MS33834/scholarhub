@@ -1,9 +1,15 @@
 import os
 from collections.abc import AsyncGenerator
 
+import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 # Keep tests out of production mode so middleware/validation stay permissive.
 os.environ.setdefault("SCHOLARHUB_ENVIRONMENT", "test")
@@ -19,6 +25,18 @@ TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
 test_async_session = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
+
+
+@pytest_asyncio.fixture(name="test_engine")
+async def _test_engine_fixture() -> AsyncEngine:
+    """Expose the test engine for scripts that need to create tables."""
+    return test_engine
+
+
+@pytest.fixture(name="test_async_session")
+def _test_async_session_fixture() -> async_sessionmaker[AsyncSession]:
+    """Expose the test session factory for scripts that need sessions."""
+    return test_async_session
 
 
 async def override_get_db() -> AsyncGenerator[AsyncSession, None]:

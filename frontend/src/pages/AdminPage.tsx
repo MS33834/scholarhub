@@ -436,12 +436,14 @@ export function AdminPage() {
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() => handleEdit(resource)}
+                        aria-label={t('admin.editResource')}
                         className="text-moss hover:text-ink transition-colors mr-3"
                       >
                         <Edit size={18} />
                       </button>
                       <button
                         onClick={() => handleDelete(resource.id)}
+                        aria-label={t('admin.deleteResource')}
                         className="text-ink-mute hover:text-ochre transition-colors"
                       >
                         <Trash2 size={18} />

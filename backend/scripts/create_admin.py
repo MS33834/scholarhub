@@ -1,21 +1,36 @@
 """Create the default admin user if it does not already exist."""
 
 import asyncio
+from typing import TYPE_CHECKING
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from app.core.config import settings
 from app.core.security import hash_password
 from app.db.session import async_session, engine
 from app.models.models import Base, User
 
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import async_sessionmaker
 
-async def create_admin() -> None:
-    async with engine.begin() as conn:
+
+async def create_admin(
+    engine_override: AsyncEngine | None = None,
+    session_factory: "async_sessionmaker[AsyncSession] | None" = None,
+) -> None:
+    """Create the configured admin user if missing.
+
+    Optional overrides allow tests to inject an isolated engine/session
+    instead of touching the production database.
+    """
+    db_engine = engine_override or engine
+    db_session_factory = session_factory or async_session
+
+    async with db_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    async with async_session() as session:
+    async with db_session_factory() as session:
         session: AsyncSession
         result = await session.execute(select(User).where(User.email == settings.admin_email))
         existing = result.scalar_one_or_none()
