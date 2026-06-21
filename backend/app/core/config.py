@@ -31,7 +31,9 @@ class Settings(BaseSettings):
 
     # CORS — accepts a JSON array string or comma-separated origins.
     # Example: '["https://example.com"]' or 'https://a.com,https://b.com'
-    cors_origins: str = "http://localhost:5173,http://localhost:3000"
+    # Development defaults cover the common Vite ports so the dev server
+    # can land on 5173 or 5174 without manual CORS reconfiguration.
+    cors_origins: str = "http://localhost:5173,http://localhost:5174,http://localhost:3000"
 
     # Trusted hosts / CSRF — comma-separated hostnames.
     # Example: 'api.scholarhub.example,scholarhub.example'
