@@ -37,6 +37,9 @@ class UserResponse(UserBase):
     )
 
     id: int
+    # Use plain str for responses so local/development addresses such as
+    # admin@scholarhub.local do not fail strict EmailStr validation.
+    email: str
     is_active: bool
     is_admin: bool
 

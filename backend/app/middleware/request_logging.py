@@ -11,9 +11,6 @@ from __future__ import annotations
 
 import time
 
-from fastapi import Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
-
 from app.core.logging import ACCESS_LOG_NAME, REQUEST_ID_CTX, generate_request_id, get_logger
 
 access_logger = get_logger(ACCESS_LOG_NAME)
@@ -21,50 +18,77 @@ access_logger = get_logger(ACCESS_LOG_NAME)
 REQUEST_ID_HEADER = "x-request-id"
 
 
-class RequestLoggingMiddleware(BaseHTTPMiddleware):
+class RequestLoggingMiddleware:
     """Generate/request a request id and log request details."""
 
-    async def dispatch(self, request: Request, call_next):
-        request_id = request.headers.get(REQUEST_ID_HEADER) or generate_request_id()
-        token = REQUEST_ID_CTX.set(request_id)
+    def __init__(self, app):
+        self.app = app
 
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        request_id = None
+        for name, value in scope.get("headers", []):
+            if name.lower() == REQUEST_ID_HEADER.encode():
+                request_id = value.decode()
+                break
+        if request_id is None:
+            request_id = generate_request_id()
+
+        token = REQUEST_ID_CTX.set(request_id)
         start = time.perf_counter()
-        response: Response | None = None
+        status_code = 500
+
+        async def send_wrapper(message):
+            nonlocal status_code
+            if message["type"] == "http.response.start":
+                status_code = message["status"]
+                headers = list(message.get("headers", []))
+                headers.append((REQUEST_ID_HEADER.encode(), request_id.encode()))
+                message["headers"] = headers
+            await send(message)
+
         try:
-            response = await call_next(request)
+            await self.app(scope, receive, send_wrapper)
         finally:
             duration_ms = (time.perf_counter() - start) * 1000
-            status_code = response.status_code if response is not None else 500
 
-            if response is not None:
-                response.headers[REQUEST_ID_HEADER] = request_id
+            client_ip = "-"
+            for name, value in scope.get("headers", []):
+                if name.lower() == b"x-forwarded-for":
+                    client_ip = value.decode().split(",")[0].strip()
+                    break
+            else:
+                client = scope.get("client")
+                if client:
+                    client_ip = client[0]
 
-            client_ip = request.headers.get(
-                "x-forwarded-for", request.client.host if request.client else "-"
-            )
-            if isinstance(client_ip, str) and "," in client_ip:
-                client_ip = client_ip.split(",")[0].strip()
+            user_agent = "-"
+            for name, value in scope.get("headers", []):
+                if name.lower() == b"user-agent":
+                    user_agent = value.decode()
+                    break
 
             access_logger.info(
                 "%(method)s %(path)s %(status)s %(duration).2fms %(client_ip)s",
                 {
-                    "method": request.method,
-                    "path": request.url.path,
+                    "method": scope["method"],
+                    "path": scope["path"],
                     "status": status_code,
                     "duration": duration_ms,
                     "client_ip": client_ip,
                 },
                 extra={
-                    "method": request.method,
-                    "path": request.url.path,
-                    "query": str(request.query_params),
+                    "method": scope["method"],
+                    "path": scope["path"],
+                    "query": str(scope.get("query_string", b""), "utf-8"),
                     "status_code": status_code,
                     "duration_ms": round(duration_ms, 2),
                     "client_ip": client_ip,
-                    "user_agent": request.headers.get("user-agent", "-"),
+                    "user_agent": user_agent,
                 },
             )
 
             REQUEST_ID_CTX.reset(token)
-
-        return response

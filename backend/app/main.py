@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi.extension import _rate_limit_exceeded_handler
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api.auth import router as auth_router
 from app.api.disciplines import router as disciplines_router
@@ -27,21 +26,41 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+class SecurityHeadersMiddleware:
     """Add baseline security headers to every response."""
 
-    async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-        # CSP is intentionally minimal; tighten once asset hosts are known.
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"
-        )
-        return response
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                headers.extend(
+                    [
+                        (b"x-content-type-options", b"nosniff"),
+                        (b"x-frame-options", b"DENY"),
+                        (b"x-xss-protection", b"1; mode=block"),
+                        (b"referrer-policy", b"strict-origin-when-cross-origin"),
+                        (
+                            b"permissions-policy",
+                            b"geolocation=(), microphone=(), camera=()",
+                        ),
+                        # CSP is intentionally minimal; tighten once asset hosts are known.
+                        (
+                            b"content-security-policy",
+                            b"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'",
+                        ),
+                    ]
+                )
+                message["headers"] = headers
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
 
 
 # Middleware order matters: request logging first (outermost) so it captures
