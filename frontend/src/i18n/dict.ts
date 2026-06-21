@@ -261,6 +261,7 @@ export type Dict = {
   'admin.loading': string
   'admin.noResources': string
   'admin.actions': string
+  'admin.deleteResource': string
   'admin.confirmDelete': string
   'lists.empty.title': string
   'lists.empty.body': string
@@ -651,6 +652,7 @@ const en: Dict = {
   'admin.loading': 'Loading resources...',
   'admin.noResources': 'No resources found',
   'admin.actions': 'Actions',
+  'admin.deleteResource': 'Delete resource',
   'admin.confirmDelete': 'Are you sure you want to delete this resource?',
   'shortcuts.openItem': 'Open selected item',
   'shortcuts.goHome': 'Go to home',
@@ -973,6 +975,7 @@ const zh: Dict = {
   'admin.loading': '加载资源中...',
   'admin.noResources': '未找到资源',
   'admin.actions': '操作',
+  'admin.deleteResource': '删除资源',
   'admin.confirmDelete': '确定要删除此资源吗？',
 }
 

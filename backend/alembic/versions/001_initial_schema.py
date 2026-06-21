@@ -5,6 +5,7 @@ Revises:
 Create Date: 2026-06-17 00:00:00.000000
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -81,7 +82,9 @@ def upgrade() -> None:
         sa.Column("viewed_at", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_reading_history_resource_id", "reading_history", ["resource_id"], unique=False)
+    op.create_index(
+        "ix_reading_history_resource_id", "reading_history", ["resource_id"], unique=False
+    )
     op.create_index("ix_reading_history_user_id", "reading_history", ["user_id"], unique=False)
 
 
