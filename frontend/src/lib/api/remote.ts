@@ -10,11 +10,13 @@ import {
   type RefreshTokenRequest,
   type RegisterCredentials,
   type User,
+  type UserListResponse,
   type FavoriteCreateResponse,
   type HistoryCreateResponse,
   type HistoryEntry,
   type ReadingList,
   type ReadingListCreate,
+  type ReadingListListResponse,
   type ReadingListUpdate,
   type ResourceSubmission,
   type ResourceSubmissionCreate,
@@ -219,8 +221,8 @@ class RemoteApiClient {
   }
 
   // Users
-  async listUsers(): Promise<User[]> {
-    return this.request<User[]>('/users/')
+  async listUsers(): Promise<UserListResponse> {
+    return this.request<UserListResponse>('/users/')
   }
 
   async updateUser(id: number, updates: UserUpdate): Promise<User> {
@@ -263,8 +265,8 @@ class RemoteApiClient {
   }
 
   // Reading lists
-  async getReadingLists(): Promise<ReadingList[]> {
-    return this.request<ReadingList[]>('/reading-lists/')
+  async getReadingLists(): Promise<ReadingListListResponse> {
+    return this.request<ReadingListListResponse>('/reading-lists/')
   }
 
   async createReadingList(data: ReadingListCreate): Promise<ReadingList> {

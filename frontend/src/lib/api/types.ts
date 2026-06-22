@@ -167,3 +167,17 @@ export interface ResourceSubmissionListResponse {
     totalPages: number
   }
 }
+
+export interface UserListResponse {
+  data: User[]
+  meta: {
+    total: number
+    page: number
+    pageSize: number
+    totalPages: number
+  }
+}
+
+export interface ReadingListListResponse {
+  data: ReadingList[]
+}

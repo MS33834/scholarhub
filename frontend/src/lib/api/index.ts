@@ -134,7 +134,8 @@ class Api {
   // Users (remote only)
   async listUsers(): Promise<User[]> {
     if (!isRemote) throw new Error('User management requires a remote backend')
-    return remoteApi.listUsers()
+    const response = await remoteApi.listUsers()
+    return response.data || []
   }
 
   async updateUser(id: number, updates: UserUpdate): Promise<User> {
@@ -182,7 +183,8 @@ class Api {
   // Reading lists (remote only; local mode falls back to localStorage store)
   async getReadingLists(): Promise<ReadingList[]> {
     if (!isRemote) throw new Error('Cloud reading lists require a remote backend')
-    return remoteApi.getReadingLists()
+    const response = await remoteApi.getReadingLists()
+    return response.data || []
   }
 
   async createReadingList(data: ReadingListCreate): Promise<ReadingList> {

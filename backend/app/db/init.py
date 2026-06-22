@@ -10,18 +10,19 @@ from app.models.models import Base, User
 
 
 async def _run_migrations():
-    """Run Alembic migrations when available; fall back to create_all."""
+    """Run Alembic migrations when available; fall back to create_all only if Alembic is missing."""
     try:
         from alembic import command
         from alembic.config import Config
-
-        alembic_cfg = Config("alembic.ini")
-        command.upgrade(alembic_cfg, "head")
-        print("Migrations applied successfully")
-    except Exception as exc:
-        print(f"Alembic migration failed ({exc}); falling back to create_all")
+    except ImportError:
+        print("Alembic not installed; falling back to create_all")
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+        return
+
+    alembic_cfg = Config("alembic.ini")
+    command.upgrade(alembic_cfg, "head")
+    print("Migrations applied successfully")
 
 
 async def _ensure_admin(db: AsyncSession):

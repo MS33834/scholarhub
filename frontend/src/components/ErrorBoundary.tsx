@@ -57,7 +57,7 @@ export class ErrorBoundary extends Component<Props, State> {
           hasError={this.state.hasError}
           onReset={() => {
             this.setState({ hasError: false })
-            window.location.hash = '/'
+            window.location.href = '/'
           }}
         />
       )

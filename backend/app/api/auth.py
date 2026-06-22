@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
@@ -24,7 +25,7 @@ async def register(request: Request, req: UserCreate, db: AsyncSession = Depends
     result = await db.execute(
         select(User).where((User.email == req.email) | (User.username == req.username))
     )
-    if result.scalar_one_or_none():
+    if result.first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists")
 
     user = User(
@@ -34,7 +35,11 @@ async def register(request: Request, req: UserCreate, db: AsyncSession = Depends
         is_admin=False,
     )
     db.add(user)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists")
     await db.refresh(user)
 
     token = create_access_token({"sub": str(user.id)})
@@ -82,7 +87,12 @@ async def refresh(request: Request, req: RefreshTokenRequest, db: AsyncSession =
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
 
-    user_id = int(payload["sub"])
+    try:
+        user_id = int(payload["sub"])
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        )
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
 

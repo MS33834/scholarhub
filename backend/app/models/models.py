@@ -57,7 +57,9 @@ class Resource(Base):
     doi: Mapped[str | None] = mapped_column(String(200))
     citation: Mapped[dict] = mapped_column(JSON)
     citations: Mapped[int | None] = mapped_column(Integer, default=0)
-    added_at: Mapped[str] = mapped_column(String(20))
+    added_at: Mapped[str] = mapped_column(
+        String(20), default=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

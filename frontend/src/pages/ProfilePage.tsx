@@ -2,19 +2,25 @@ import { useAuth } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n/useLang';
 import { User, LogOut, Settings, Shield } from 'lucide-react';
+import { useEffect } from 'react';
 
 export function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const navigate = useNavigate();
   const { t } = useT();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate('/login');
+    }
+  }, [isLoading, user, navigate]);
 
   const handleLogout = () => {
     logout();
     navigate('/');
   };
 
-  if (!user) {
-    navigate('/login');
+  if (isLoading || !user) {
     return null;
   }
 
