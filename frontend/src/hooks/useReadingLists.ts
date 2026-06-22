@@ -23,11 +23,11 @@ interface UseReadingListsReturn {
 
 function remoteToLocalList(remote: RemoteReadingList): LocalReadingList {
   return {
-    id: remote.id,
+    id: String(remote.id),
     name: remote.name,
     description: remote.description || '',
     isPublic: remote.isPublic,
-    resourceIds: remote.items.map((item) => item.resourceId),
+    resourceIds: remote.items.map((item) => item.resource?.id || item.resourceId || ''),
     createdAt: new Date(remote.createdAt).getTime(),
     updatedAt: new Date(remote.updatedAt).getTime(),
   }

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Bookmark, Trash2 } from 'lucide-react'
-import { useFavorites } from '@/store'
+import { useFavorites } from '@/hooks/useFavorites'
 import { useT } from '@/i18n/useLang'
 import { ResourceCard } from '@/components/ResourceCard'
 import { Skeleton } from '@/components/Skeleton'
@@ -41,11 +41,14 @@ export function FavoritesPage() {
     URL.revokeObjectURL(url)
   }
 
-  const onClear = () => {
+  const onClear = async () => {
     if (!window.confirm(t('favorites.confirm.clear'))) return
     setBusy(true)
-    clear()
-    setBusy(false)
+    try {
+      await clear()
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (

@@ -301,13 +301,14 @@ class ReadingListDetailResponse(CamelBaseModel):
     name: str
     description: str | None
     is_public: bool
+    item_count: int = 0
     created_at: datetime
     updated_at: datetime
     items: list[ReadingListItemResponse]
 
 
 class ReadingListListResponse(CamelBaseModel):
-    data: list[ReadingListResponse]
+    data: list[ReadingListDetailResponse]
 
 
 class ReadingListAddItemResponse(CamelBaseModel):

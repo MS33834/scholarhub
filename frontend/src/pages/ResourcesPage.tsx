@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ArrowRight, SearchX } from 'lucide-react'
+import { ArrowRight, ChevronLeft, ChevronRight, SearchX } from 'lucide-react'
 import { ResourceCard } from '@/components/ResourceCard'
 import { Skeleton } from '@/components/Skeleton'
 import { useResources, useDisciplines } from '@/hooks/useResources'
@@ -199,6 +199,28 @@ export function ResourcesPage() {
         {!loading && !error && filtered.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filtered.map((r) => <ResourceCard key={r.id} resource={r} />)}
+          </div>
+        )}
+
+        {!loading && !error && meta && meta.totalPages > 1 && (
+          <div className="mt-12 flex items-center justify-between border-t border-rule pt-6">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="inline-flex items-center gap-1 text-sm text-ink-soft hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={16} /> {t('pagination.previous')}
+            </button>
+            <span className="text-sm text-ink-mute font-mono">
+              {t('pagination.page', { page, total: meta.totalPages })}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
+              disabled={page >= meta.totalPages}
+              className="inline-flex items-center gap-1 text-sm text-ink-soft hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {t('pagination.next')} <ChevronRight size={16} />
+            </button>
           </div>
         )}
       </section>

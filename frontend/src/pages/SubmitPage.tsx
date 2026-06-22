@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Upload, AlertCircle, CheckCircle } from 'lucide-react'
 import { useT } from '@/i18n/useLang'
 import { useAuth } from '@/store/authStore'
+import { useDisciplines } from '@/hooks/useResources'
 import { api } from '@/lib/api'
 import type { ResourceSubmissionCreate } from '@/lib/api'
 
@@ -29,8 +30,9 @@ function splitField(value: string): string[] {
 }
 
 export function SubmitPage() {
-  const { t } = useT()
+  const { t, lang } = useT()
   const { isAuthenticated } = useAuth()
+  const disciplines = useDisciplines()
   const [form, setForm] = useState<ResourceSubmissionCreate>(EMPTY_FORM)
   const [authorsInput, setAuthorsInput] = useState('')
   const [tagsInput, setTagsInput] = useState('')
@@ -47,6 +49,12 @@ export function SubmitPage() {
     setLoading(true)
     setSuccess(false)
     setError('')
+
+    if (!form.discipline) {
+      setError(t('submit.disciplineRequired'))
+      setLoading(false)
+      return
+    }
 
     const payload: ResourceSubmissionCreate = {
       ...form,
@@ -215,14 +223,20 @@ export function SubmitPage() {
             <label htmlFor="submit-discipline" className="block text-sm font-medium text-ink-mute mb-2">
               {t('submit.form.discipline')}
             </label>
-            <input
+            <select
               id="submit-discipline"
-              type="text"
               value={form.discipline}
-              onChange={(e) => updateField('discipline', e.target.value)}
+              onChange={(e) => updateField('discipline', e.target.value as ResourceSubmissionCreate['discipline'])}
               className="w-full px-3 py-2 border border-rule rounded-[2px] bg-transparent focus:outline-none focus:border-moss"
               required
-            />
+            >
+              <option value="">{t('resources.filter.all')}</option>
+              {disciplines.map((d) => (
+                <option key={d.slug} value={d.slug}>
+                  {lang === 'en' ? d.nameEn : d.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

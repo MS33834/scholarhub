@@ -81,7 +81,7 @@ describe('SubmitPage', () => {
     await user.clear(screen.getByLabelText('Year'))
     await user.type(screen.getByLabelText('Year'), '2024')
     await user.type(screen.getByLabelText('Venue / Publisher'), 'Journal of Testing')
-    await user.type(screen.getByLabelText('Discipline'), 'computer-science')
+    await user.selectOptions(screen.getByLabelText('Discipline'), 'computer-science')
     await user.type(screen.getByLabelText('Subdiscipline'), 'nlp')
     await user.type(screen.getByLabelText('DOI'), '10.1234/test')
     await user.type(screen.getByLabelText('Download URL'), 'https://example.com/paper.pdf')

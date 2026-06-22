@@ -227,7 +227,10 @@ async def test_add_and_remove_item(client, test_user, sample_resource, db_sessio
         headers={"Authorization": f"Bearer {test_user['token']}"},
     )
     assert add_response.status_code == 201
-    assert add_response.json()["message"] == "Resource added to reading list"
+    add_data = add_response.json()
+    assert add_data["itemCount"] == 1
+    assert len(add_data["items"]) == 1
+    assert add_data["items"][0]["resource"]["id"] == sample_resource["id"]
 
     duplicate_response = await client.post(
         f"/api/reading-lists/{list_id}/items",
@@ -235,13 +238,17 @@ async def test_add_and_remove_item(client, test_user, sample_resource, db_sessio
         headers={"Authorization": f"Bearer {test_user['token']}"},
     )
     assert duplicate_response.status_code == 201
-    assert duplicate_response.json()["message"] == "Resource already in reading list"
+    duplicate_data = duplicate_response.json()
+    assert duplicate_data["itemCount"] == 1
+    assert len(duplicate_data["items"]) == 1
 
     remove_response = await client.delete(
         f"/api/reading-lists/{list_id}/items/{sample_resource['id']}",
         headers={"Authorization": f"Bearer {test_user['token']}"},
     )
-    assert remove_response.status_code == 204
+    assert remove_response.status_code == 200
+    assert remove_response.json()["itemCount"] == 0
+    assert len(remove_response.json()["items"]) == 0
 
     result = await db_session.execute(
         select(ReadingListItem).where(

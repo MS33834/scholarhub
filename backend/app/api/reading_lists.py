@@ -12,12 +12,10 @@ from app.core.limiter import rate_limit
 from app.db.session import get_db
 from app.models.models import ReadingList, ReadingListItem, Resource, User
 from app.schemas import (
-    ReadingListAddItemResponse,
     ReadingListCreate,
     ReadingListDetailResponse,
     ReadingListItemCreate,
     ReadingListListResponse,
-    ReadingListResponse,
     ReadingListUpdate,
 )
 
@@ -31,6 +29,28 @@ def _check_ownership(reading_list: ReadingList, current_user: User) -> None:
         )
 
 
+async def _load_reading_list_detail(
+    db: AsyncSession, list_id: int
+) -> ReadingList:
+    """Load a reading list with items and their resources eagerly."""
+    result = await db.execute(select(ReadingList).where(ReadingList.id == list_id))
+    reading_list = result.scalar_one_or_none()
+    if reading_list is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Reading list not found"
+        )
+
+    items_result = await db.execute(
+        select(ReadingListItem)
+        .options(selectinload(ReadingListItem.resource))
+        .where(ReadingListItem.reading_list_id == list_id)
+        .order_by(ReadingListItem.added_at)
+    )
+    reading_list.items = items_result.scalars().all()
+    reading_list.item_count = len(reading_list.items)
+    return reading_list
+
+
 @router.get("/", response_model=ReadingListListResponse)
 @rate_limit(f"{settings.rate_limit_per_minute}/minute")
 async def list_reading_lists(
@@ -38,30 +58,20 @@ async def list_reading_lists(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    item_count_subq = (
-        select(func.count(ReadingListItem.id))
-        .where(ReadingListItem.reading_list_id == ReadingList.id)
-        .correlate(ReadingList)
-        .scalar_subquery()
-    )
-
     result = await db.execute(
-        select(ReadingList, item_count_subq.label("item_count"))
+        select(ReadingList)
         .where(ReadingList.user_id == current_user.id)
         .order_by(ReadingList.created_at.desc())
     )
 
-    data = []
-    for reading_list, count in result.all():
-        data.append(
-            ReadingListResponse.model_validate(reading_list).model_copy(
-                update={"item_count": count}
-            )
-        )
+    reading_lists = result.scalars().all()
+    for r in reading_lists:
+        await _load_reading_list_detail(db, r.id)
+    data = [ReadingListDetailResponse.model_validate(r) for r in reading_lists]
     return ReadingListListResponse(data=data)
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=ReadingListResponse)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=ReadingListDetailResponse)
 @rate_limit("30/minute")
 async def create_reading_list(
     request: Request,
@@ -78,9 +88,9 @@ async def create_reading_list(
     db.add(reading_list)
     await db.commit()
     await db.refresh(reading_list)
-    return ReadingListResponse.model_validate(reading_list).model_copy(
-        update={"item_count": 0}
-    )
+    reading_list.item_count = 0
+    reading_list.items = []
+    return ReadingListDetailResponse.model_validate(reading_list)
 
 
 @router.get("/{list_id}", response_model=ReadingListDetailResponse)
@@ -91,25 +101,12 @@ async def get_reading_list(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(ReadingList)
-        .options(
-            selectinload(ReadingList.items).selectinload(ReadingListItem.resource)
-        )
-        .where(ReadingList.id == list_id)
-    )
-    reading_list = result.scalar_one_or_none()
-    if not reading_list:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Reading list not found"
-        )
+    reading_list = await _load_reading_list_detail(db, list_id)
     _check_ownership(reading_list, current_user)
-
-    reading_list.items = sorted(reading_list.items, key=lambda item: item.added_at)
     return ReadingListDetailResponse.model_validate(reading_list)
 
 
-@router.patch("/{list_id}", response_model=ReadingListResponse)
+@router.patch("/{list_id}", response_model=ReadingListDetailResponse)
 @rate_limit("30/minute")
 async def update_reading_list(
     request: Request,
@@ -118,10 +115,7 @@ async def update_reading_list(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(ReadingList)
-        .where(ReadingList.id == list_id)
-    )
+    result = await db.execute(select(ReadingList).where(ReadingList.id == list_id))
     reading_list = result.scalar_one_or_none()
     if not reading_list:
         raise HTTPException(
@@ -138,17 +132,10 @@ async def update_reading_list(
     reading_list.updated_at = datetime.now(timezone.utc)
 
     await db.commit()
-    await db.refresh(reading_list)
 
-    item_count_result = await db.execute(
-        select(func.count(ReadingListItem.id)).where(
-            ReadingListItem.reading_list_id == reading_list.id
-        )
-    )
-    item_count = item_count_result.scalar() or 0
-    return ReadingListResponse.model_validate(reading_list).model_copy(
-        update={"item_count": item_count}
-    )
+    reading_list = await _load_reading_list_detail(db, list_id)
+    _check_ownership(reading_list, current_user)
+    return ReadingListDetailResponse.model_validate(reading_list)
 
 
 @router.delete("/{list_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -176,7 +163,7 @@ async def delete_reading_list(
 @router.post(
     "/{list_id}/items",
     status_code=status.HTTP_201_CREATED,
-    response_model=ReadingListAddItemResponse,
+    response_model=ReadingListDetailResponse,
 )
 @rate_limit("30/minute")
 async def add_item_to_reading_list(
@@ -186,9 +173,7 @@ async def add_item_to_reading_list(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(ReadingList).where(ReadingList.id == list_id)
-    )
+    result = await db.execute(select(ReadingList).where(ReadingList.id == list_id))
     reading_list = result.scalar_one_or_none()
     if not reading_list:
         raise HTTPException(
@@ -211,23 +196,29 @@ async def add_item_to_reading_list(
         )
     )
     if existing.scalar_one_or_none():
-        return ReadingListAddItemResponse(message="Resource already in reading list")
+        reading_list = await _load_reading_list_detail(db, list_id)
+        _check_ownership(reading_list, current_user)
+        return ReadingListDetailResponse.model_validate(reading_list)
 
-    item = ReadingListItem(
-        reading_list_id=list_id, resource_id=payload.resource_id
-    )
+    item = ReadingListItem(reading_list_id=list_id, resource_id=payload.resource_id)
     db.add(item)
     try:
         await db.commit()
     except IntegrityError:
         await db.rollback()
-        return ReadingListAddItemResponse(message="Resource already in reading list")
-    return ReadingListAddItemResponse(message="Resource added to reading list")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Resource already in reading list",
+        )
+
+    reading_list = await _load_reading_list_detail(db, list_id)
+    _check_ownership(reading_list, current_user)
+    return ReadingListDetailResponse.model_validate(reading_list)
 
 
 @router.delete(
     "/{list_id}/items/{resource_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=ReadingListDetailResponse,
 )
 @rate_limit("30/minute")
 async def remove_item_from_reading_list(
@@ -237,9 +228,7 @@ async def remove_item_from_reading_list(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(ReadingList).where(ReadingList.id == list_id)
-    )
+    result = await db.execute(select(ReadingList).where(ReadingList.id == list_id))
     reading_list = result.scalar_one_or_none()
     if not reading_list:
         raise HTTPException(
@@ -261,3 +250,7 @@ async def remove_item_from_reading_list(
 
     await db.delete(item)
     await db.commit()
+
+    reading_list = await _load_reading_list_detail(db, list_id)
+    _check_ownership(reading_list, current_user)
+    return ReadingListDetailResponse.model_validate(reading_list)

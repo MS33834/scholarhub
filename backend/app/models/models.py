@@ -185,7 +185,10 @@ class ReadingList(Base):
 
     user: Mapped["User"] = relationship("User", back_populates="reading_lists")
     items: Mapped[list["ReadingListItem"]] = relationship(
-        "ReadingListItem", back_populates="reading_list", cascade="all, delete-orphan"
+        "ReadingListItem",
+        back_populates="reading_list",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
 
@@ -212,4 +215,4 @@ class ReadingListItem(Base):
     reading_list: Mapped["ReadingList"] = relationship(
         "ReadingList", back_populates="items"
     )
-    resource: Mapped["Resource"] = relationship("Resource")
+    resource: Mapped["Resource"] = relationship("Resource", lazy="selectin")

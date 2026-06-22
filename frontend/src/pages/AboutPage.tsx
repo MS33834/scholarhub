@@ -1,11 +1,13 @@
 import { useT } from '@/i18n/useLang'
 
-const sections: { titleKey: 'about.mission.title' | 'about.scope.title' | 'about.data.title' | 'about.contribute.title' | 'about.license.title'; bodyKey: 'about.mission.body' | 'about.scope.body' | 'about.data.body' | 'about.contribute.body' | 'about.license.body' }[] = [
+const sections: { titleKey: 'about.mission.title' | 'about.scope.title' | 'about.data.title' | 'about.contribute.title' | 'about.license.title' | 'about.cite.title' | 'about.acknowledgments.title'; bodyKey: 'about.mission.body' | 'about.scope.body' | 'about.data.body' | 'about.contribute.body' | 'about.license.body' | 'about.cite.body' | 'about.acknowledgments.body' }[] = [
   { titleKey: 'about.mission.title', bodyKey: 'about.mission.body' },
   { titleKey: 'about.scope.title', bodyKey: 'about.scope.body' },
   { titleKey: 'about.data.title', bodyKey: 'about.data.body' },
   { titleKey: 'about.contribute.title', bodyKey: 'about.contribute.body' },
   { titleKey: 'about.license.title', bodyKey: 'about.license.body' },
+  { titleKey: 'about.cite.title', bodyKey: 'about.cite.body' },
+  { titleKey: 'about.acknowledgments.title', bodyKey: 'about.acknowledgments.body' },
 ]
 
 export function AboutPage() {

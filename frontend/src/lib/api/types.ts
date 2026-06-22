@@ -1,5 +1,6 @@
 import type { ResourceType, Discipline, Resource } from '@/types'
 
+
 export interface PaginatedResponse<T> {
   data: T[]
   meta: {
@@ -85,7 +86,8 @@ export interface HistoryCreateResponse {
 }
 
 export interface ReadingListItem {
-  resourceId: string
+  resource: Resource
+  resourceId?: string
   addedAt?: string
 }
 

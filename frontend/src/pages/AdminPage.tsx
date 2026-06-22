@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n/useLang';
+import { useDisciplines } from '@/hooks/useResources';
 import { api } from '@/lib/api';
 import { useUI } from '@/store/ui';
 import { Plus, Edit, Trash2, Save, X, Trash, ChevronDown, UserCog, Shield, ShieldOff, UserX } from 'lucide-react';
@@ -45,16 +46,45 @@ function getInitialForm(resource?: Resource | null): Partial<Resource> {
 
 type AdminTab = 'resources' | 'submissions' | 'users';
 
+function validateResourceForm(data: Partial<Resource>, t: ReturnType<typeof useT>['t']): string[] {
+  const errors: string[] = [];
+  const required = (key: string, value: unknown) => {
+    if (typeof value === 'string' && !value.trim()) {
+      errors.push(t('admin.formError.required', { field: key }));
+    }
+  };
+
+  required('ID', data.id);
+  required(t('admin.title'), data.title);
+  required(t('admin.discipline'), data.discipline);
+  required(t('admin.abstract'), data.abstract);
+  required(t('admin.preview'), data.preview);
+
+  const year = data.year ?? 0;
+  if (year < -3000 || year > 2100) {
+    errors.push(t('admin.formError.yearRange'));
+  }
+
+  const authors = (data.authors ?? []).map((a) => a.trim()).filter(Boolean);
+  if (authors.length === 0) {
+    errors.push(t('admin.formError.minAuthors'));
+  }
+
+  return errors;
+}
+
 export function AdminPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { t } = useT();
+  const { t, lang } = useT();
+  const disciplines = useDisciplines();
   const { showToast } = useUI();
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Resource>>(EMPTY_FORM);
+  const [formErrors, setFormErrors] = useState<string[]>([]);
 
   const [submissions, setSubmissions] = useState<ResourceSubmission[]>([]);
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
@@ -129,6 +159,13 @@ export function AdminPage() {
       },
     };
 
+    const errors = validateResourceForm(cleaned, t);
+    if (errors.length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors([]);
+
     try {
       if (editingId) {
         await api.updateResource(editingId, cleaned);
@@ -138,9 +175,10 @@ export function AdminPage() {
       setShowForm(false);
       setEditingId(null);
       setFormData(EMPTY_FORM);
+      setFormErrors([]);
       loadResources();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Operation failed');
+      setFormErrors([err instanceof Error ? err.message : 'Operation failed']);
     }
   };
 
@@ -416,6 +454,16 @@ export function AdminPage() {
             {editingId ? t('admin.editResource') : t('admin.newResource')}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {formErrors.length > 0 && (
+              <div className="p-4 border border-ochre/30 rounded-[2px] bg-ochre/5">
+                <p className="text-sm font-medium text-ochre mb-2">{t('admin.formError')}</p>
+                <ul className="list-disc list-inside text-sm text-ink-soft space-y-1">
+                  {formErrors.map((err, idx) => (
+                    <li key={idx}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-ink-mute mb-2">ID</label>
@@ -472,13 +520,18 @@ export function AdminPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-ink-mute mb-2">{t('admin.discipline')}</label>
-                <input
-                  type="text"
+                <select
                   value={formData.discipline}
                   onChange={(e) => setFormData({ ...formData, discipline: e.target.value as Resource['discipline'] })}
                   className="w-full px-3 py-2 border border-rule rounded-[2px] bg-transparent focus:outline-none focus:border-moss"
                   required
-                />
+                >
+                  {disciplines.map((d) => (
+                    <option key={d.slug} value={d.slug}>
+                      {lang === 'en' ? d.nameEn : d.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-ink-mute mb-2">{t('admin.subdiscipline')}</label>

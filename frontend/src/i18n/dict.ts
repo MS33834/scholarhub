@@ -157,6 +157,10 @@ export type Dict = {
   'about.contribute.body': string
   'about.license.title': string
   'about.license.body': string
+  'about.cite.title': string
+  'about.cite.body': string
+  'about.acknowledgments.title': string
+  'about.acknowledgments.body': string
 
   // ── Resource card ───────────────────────────────────────────
   'card.details': string
@@ -183,7 +187,7 @@ export type Dict = {
   'pagination.label': string
   'pagination.previous': string
   'pagination.next': string
-  'pagination.page': string          // accepts {page}
+  'pagination.page': string          // accepts {page} and {total}
 
   // ── Print ───────────────────────────────────────────────────
   'print.title': string
@@ -273,6 +277,7 @@ export type Dict = {
   'submit.submit': string
   'submit.success': string
   'submit.loginRequired': string
+  'submit.disciplineRequired': string
 
   // ── Admin ───────────────────────────────────────────────────
   'admin.title': string
@@ -310,6 +315,10 @@ export type Dict = {
   'admin.actions': string
   'admin.deleteResource': string
   'admin.confirmDelete': string
+  'admin.formError': string
+  'admin.formError.required': string
+  'admin.formError.yearRange': string
+  'admin.formError.minAuthors': string
 
   // ── Admin users ─────────────────────────────────────────────
   'admin.users.title': string
@@ -551,6 +560,12 @@ const en: Dict = {
   'about.license.title': 'License',
   'about.license.body':
     'Code: MIT. Resource metadata: CC BY 4.0. Underlying resources remain under their original licenses — see each detail page for the source.',
+  'about.cite.title': 'Cite this project',
+  'about.cite.body':
+    'If you use ScholarHUB in your research, please cite it as: ScholarHUB Team. ScholarHUB: An open academic resource catalogue [DB/OL]. https://scholarhub.example.com, 2026.',
+  'about.acknowledgments.title': 'Acknowledgments',
+  'about.acknowledgments.body':
+    'Built with FastAPI, React, Tailwind CSS, SQLAlchemy, Alembic, and Vitest. Thanks to every contributor who filed issues, submitted resources, and improved the codebase.',
 
   // Card
   'card.details': 'Details',
@@ -588,7 +603,7 @@ const en: Dict = {
   'pagination.label': 'Pagination',
   'pagination.previous': 'Previous',
   'pagination.next': 'Next',
-  'pagination.page': 'Page {page}',
+  'pagination.page': '{page} / {total}',
 
   // ── Print ───────────────────────────────────────────────────
   'print.title': 'Print this resource',
@@ -718,6 +733,7 @@ const en: Dict = {
   'submit.submit': 'Submit resource',
   'submit.success': 'Submission received. It will be reviewed shortly.',
   'submit.loginRequired': 'Please log in to submit a resource.',
+  'submit.disciplineRequired': 'Please select a discipline.',
 
   // ── Admin ───────────────────────────────────────────────────
   'admin.title': 'Resource Management',
@@ -755,8 +771,12 @@ const en: Dict = {
   'admin.actions': 'Actions',
   'admin.deleteResource': 'Delete resource',
   'admin.confirmDelete': 'Are you sure you want to delete this resource?',
+  'admin.formError': 'Please fix the following errors:',
+  'admin.formError.required': '{field} is required',
+  'admin.formError.yearRange': 'Year must be between -3000 and 2100',
+  'admin.formError.minAuthors': 'At least one author is required',
 
-  // ── Admin users ─────────────────────────────────────────────
+  // ── Admin users ────────────────────────────────────────────
   'admin.users.title': 'User Management',
   'admin.users.username': 'Username',
   'admin.users.email': 'Email',
@@ -848,6 +868,7 @@ const zh: Dict = {
   'resources.summary': '共 {n} 项',
   'resources.countLabel': '资源',
 
+  // Types
   'type.paper': '论文',
   'type.dataset': '数据集',
   'type.book': '教材',
@@ -934,6 +955,12 @@ const zh: Dict = {
   'about.license.title': '许可协议',
   'about.license.body':
     '代码用 MIT 协议。资源元数据用 CC BY 4.0。原始资源保留各自的许可，具体看每个资源详情页。',
+  'about.cite.title': '引用本项目',
+  'about.cite.body':
+    '如果你在研究中使用了 ScholarHUB，请按如下方式引用：ScholarHUB Team. ScholarHUB: An open academic resource catalogue [DB/OL]. https://scholarhub.example.com, 2026.',
+  'about.acknowledgments.title': '致谢',
+  'about.acknowledgments.body':
+    '本项目使用 FastAPI、React、Tailwind CSS、SQLAlchemy、Alembic 和 Vitest 构建。感谢每一位提交 issue、投稿资源和改进代码的贡献者。',
 
   'card.details': '详情',
   'card.fav.add': '加入收藏',
@@ -967,7 +994,7 @@ const zh: Dict = {
   'pagination.label': '分页导航',
   'pagination.previous': '上一页',
   'pagination.next': '下一页',
-  'pagination.page': '第 {page} 页',
+  'pagination.page': '{page} / {total}',
 
   // ── Print ───────────────────────────────────────────────────
   'print.title': '打印此资源',
@@ -1097,6 +1124,7 @@ const zh: Dict = {
   'submit.submit': '提交资源',
   'submit.success': '提交已收到，将尽快审核。',
   'submit.loginRequired': '请登录后再提交资源。',
+  'submit.disciplineRequired': '请选择一个学科。',
 
   // ── Admin ───────────────────────────────────────────────────
   'admin.title': '资源管理',
@@ -1134,6 +1162,10 @@ const zh: Dict = {
   'admin.actions': '操作',
   'admin.deleteResource': '删除资源',
   'admin.confirmDelete': '确定要删除此资源吗？',
+  'admin.formError': '请修正以下错误：',
+  'admin.formError.required': '{field} 为必填项',
+  'admin.formError.yearRange': '年份必须在 -3000 到 2100 之间',
+  'admin.formError.minAuthors': '至少需要一位作者',
 
   // ── Admin users ─────────────────────────────────────────────
   'admin.users.title': '用户管理',
