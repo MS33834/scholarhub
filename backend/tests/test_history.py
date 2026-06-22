@@ -21,6 +21,15 @@ async def test_add_to_history_unauthenticated(client, sample_resource):
 
 
 @pytest.mark.asyncio
+async def test_add_to_history_missing_resource(client, test_user):
+    response = await client.post(
+        "/api/history/nonexistent",
+        headers={"Authorization": f"Bearer {test_user['token']}"},
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_list_history(client, test_user, sample_resource):
     await client.post(
         f"/api/history/{sample_resource['id']}",

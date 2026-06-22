@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, Request, status
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -54,8 +56,23 @@ async def add_to_history(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    history = ReadingHistory(user_id=current_user.id, resource_id=resource_id)
-    db.add(history)
+    # Ensure the referenced resource exists to keep history meaningful.
+    result = await db.execute(select(Resource).where(Resource.id == resource_id))
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
+
+    # Upsert the latest view timestamp for this user/resource pair.
+    result = await db.execute(
+        select(ReadingHistory).where(
+            ReadingHistory.user_id == current_user.id,
+            ReadingHistory.resource_id == resource_id,
+        )
+    )
+    entry = result.scalar_one_or_none()
+    if entry:
+        entry.viewed_at = datetime.now(timezone.utc)
+    else:
+        db.add(ReadingHistory(user_id=current_user.id, resource_id=resource_id))
     await db.commit()
     return HistoryCreateResponse(message="Added to history")
 

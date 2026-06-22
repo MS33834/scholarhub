@@ -74,7 +74,7 @@ class ResourceBase(CamelBaseModel):
     type: str = Field(..., pattern=r"^(paper|book|dataset|tutorial)$")
     title: str
     authors: list[str]
-    year: int = Field(..., ge=1000, le=2100)
+    year: int = Field(..., ge=-3000, le=2100)
     venue: str | None = None
     discipline: str
     subdiscipline: str | None = None
@@ -97,7 +97,7 @@ class ResourceUpdate(CamelBaseModel):
     type: str | None = Field(None, pattern=r"^(paper|book|dataset|tutorial)$")
     title: str | None = None
     authors: list[str] | None = None
-    year: int | None = Field(None, ge=1000, le=2100)
+    year: int | None = Field(None, ge=-3000, le=2100)
     venue: str | None = None
     discipline: str | None = None
     subdiscipline: str | None = None
