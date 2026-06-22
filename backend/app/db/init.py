@@ -31,6 +31,7 @@ async def _ensure_admin(db: AsyncSession):
             email=settings.admin_email,
             username="admin",
             hashed_password=hash_password(settings.admin_password),
+            is_active=True,
             is_admin=True,
         )
         db.add(admin)

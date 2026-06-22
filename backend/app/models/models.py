@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, DateTime, Integer, String, Text
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
@@ -19,6 +19,13 @@ class User(Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+    favorites: Mapped[list["Favorite"]] = relationship(
+        "Favorite", back_populates="user", cascade="all, delete-orphan"
+    )
+    reading_history: Mapped[list["ReadingHistory"]] = relationship(
+        "ReadingHistory", back_populates="user", cascade="all, delete-orphan"
     )
 
 
@@ -51,24 +58,47 @@ class Resource(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
+    favorites: Mapped[list["Favorite"]] = relationship(
+        "Favorite", back_populates="resource", cascade="all, delete-orphan"
+    )
+    reading_history: Mapped[list["ReadingHistory"]] = relationship(
+        "ReadingHistory", back_populates="resource", cascade="all, delete-orphan"
+    )
+
 
 class Favorite(Base):
     __tablename__ = "favorites"
 
+    __table_args__ = (
+        UniqueConstraint("user_id", "resource_id", name="uix_user_resource_favorite"),
+    )
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, index=True)
-    resource_id: Mapped[str] = mapped_column(String(100), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    resource_id: Mapped[str] = mapped_column(
+        ForeignKey("resources.id", ondelete="CASCADE"), index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+
+    user: Mapped["User"] = relationship("User", back_populates="favorites")
+    resource: Mapped["Resource"] = relationship("Resource", back_populates="favorites")
 
 
 class ReadingHistory(Base):
     __tablename__ = "reading_history"
 
+    __table_args__ = (UniqueConstraint("user_id", "resource_id", name="uix_user_resource_history"),)
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, index=True)
-    resource_id: Mapped[str] = mapped_column(String(100), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    resource_id: Mapped[str] = mapped_column(
+        ForeignKey("resources.id", ondelete="CASCADE"), index=True
+    )
     viewed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+
+    user: Mapped["User"] = relationship("User", back_populates="reading_history")
+    resource: Mapped["Resource"] = relationship("Resource", back_populates="reading_history")

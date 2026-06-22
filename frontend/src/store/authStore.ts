@@ -24,29 +24,15 @@ export const useAuth = create<AuthState>((set) => ({
   isLoading: true,
 
   login: async (username, password) => {
-    const result = await api.login({ username, password });
-    set({
-      user: {
-        id: result.userId,
-        email: '',
-        username: result.username,
-        isAdmin: result.isAdmin,
-      },
-      isAuthenticated: true,
-    });
+    await api.login({ username, password });
+    const user = await api.getMe();
+    set({ user, isAuthenticated: true });
   },
 
   register: async (email, username, password) => {
-    const result = await api.register({ email, username, password });
-    set({
-      user: {
-        id: result.userId,
-        email,
-        username: result.username,
-        isAdmin: result.isAdmin,
-      },
-      isAuthenticated: true,
-    });
+    await api.register({ email, username, password });
+    const user = await api.getMe();
+    set({ user, isAuthenticated: true });
   },
 
   logout: () => {

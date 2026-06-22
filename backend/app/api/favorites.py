@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user
 from app.core.config import settings
@@ -19,15 +21,14 @@ async def get_favorites(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Favorite).where(Favorite.user_id == current_user.id))
+    result = await db.execute(
+        select(Favorite)
+        .options(selectinload(Favorite.resource))
+        .where(Favorite.user_id == current_user.id)
+        .order_by(Favorite.created_at.desc())
+    )
     favorites = result.scalars().all()
-
-    resource_ids = [f.resource_id for f in favorites]
-    if not resource_ids:
-        return FavoriteListResponse(favorites=[])
-
-    result = await db.execute(select(Resource).where(Resource.id.in_(resource_ids)))
-    resources = result.scalars().all()
+    resources = [f.resource for f in favorites if f.resource is not None]
     return FavoriteListResponse(favorites=[ResourceResponse.model_validate(r) for r in resources])
 
 
@@ -57,7 +58,11 @@ async def add_favorite(
 
     favorite = Favorite(user_id=current_user.id, resource_id=resource_id)
     db.add(favorite)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        return FavoriteCreateResponse(message="Already favorited")
     return FavoriteCreateResponse(message="Added to favorites")
 
 
