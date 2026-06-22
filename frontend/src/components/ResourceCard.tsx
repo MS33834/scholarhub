@@ -5,6 +5,7 @@ import type { Resource, Discipline } from '@/types'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useT } from '@/i18n/useLang'
 import { formatAuthors } from '@/utils/format'
+import { AddToListDropdown } from './AddToListDropdown'
 
 interface ResourceCardProps {
   resource: Resource
@@ -66,29 +67,32 @@ export function ResourceCard({ resource, showSummary = false }: ResourceCardProp
             <em className="not-italic text-ink-mute">{resource.venue}</em>
           </p>
         </div>
-        <button
-          onClick={async () => {
-            setPing(true)
-            try {
-              await toggleFav(resource.id)
-            } catch {
-              // Error state is already set inside the hook.
-            }
-          }}
-          className="relative shrink-0 p-2 text-ink-mute transition-colors hover:text-moss focus-visible:outline focus-visible:outline-[1.5px] focus-visible:outline-moss focus-visible:outline-offset-[3px]"
-          aria-label={isFav ? t('card.fav.remove') : t('card.fav.add')}
-          title={isFav ? t('card.fav.remove.title') : t('card.fav.add.title')}
-          aria-pressed={isFav}
-          type="button"
-        >
-          {ping && (
-            <span
-              className="pointer-events-none absolute -inset-1 rounded-full border border-[#d4af37] animate-ping"
-              aria-hidden="true"
-            />
-          )}
-          {isFav ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
-        </button>
+        <div className="flex items-start gap-1">
+          <AddToListDropdown resourceId={resource.id} variant="icon" />
+          <button
+            onClick={async () => {
+              setPing(true)
+              try {
+                await toggleFav(resource.id)
+              } catch {
+                // Error state is already set inside the hook.
+              }
+            }}
+            className="relative shrink-0 p-2 text-ink-mute transition-colors hover:text-moss focus-visible:outline focus-visible:outline-[1.5px] focus-visible:outline-moss focus-visible:outline-offset-[3px]"
+            aria-label={isFav ? t('card.fav.remove') : t('card.fav.add')}
+            title={isFav ? t('card.fav.remove.title') : t('card.fav.add.title')}
+            aria-pressed={isFav}
+            type="button"
+          >
+            {ping && (
+              <span
+                className="pointer-events-none absolute -inset-1 rounded-full border border-[#d4af37] animate-ping"
+                aria-hidden="true"
+              />
+            )}
+            {isFav ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+          </button>
+        </div>
       </div>
 
       {showSummary && (

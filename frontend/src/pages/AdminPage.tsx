@@ -3,9 +3,10 @@ import { useAuth } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n/useLang';
 import { api } from '@/lib/api';
-import { Plus, Edit, Trash2, Save, X, Trash, ChevronDown } from 'lucide-react';
+import { useUI } from '@/store/ui';
+import { Plus, Edit, Trash2, Save, X, Trash, ChevronDown, UserCog, Shield, ShieldOff, UserX } from 'lucide-react';
 import type { Resource, Citation } from '../types';
-import type { ResourceSubmission } from '@/lib/api';
+import type { ResourceSubmission, User } from '@/lib/api';
 
 const EMPTY_CITATION: Citation = {
   apa: '',
@@ -42,10 +43,13 @@ function getInitialForm(resource?: Resource | null): Partial<Resource> {
   };
 }
 
+type AdminTab = 'resources' | 'submissions' | 'users';
+
 export function AdminPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useT();
+  const { showToast } = useUI();
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -55,6 +59,10 @@ export function AdminPage() {
   const [submissions, setSubmissions] = useState<ResourceSubmission[]>([]);
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
   const [submissionsOpen, setSubmissionsOpen] = useState(true);
+
+  const [activeTab, setActiveTab] = useState<AdminTab>('resources');
+  const [users, setUsers] = useState<User[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
 
   const loadResources = async () => {
     try {
@@ -79,6 +87,18 @@ export function AdminPage() {
     }
   };
 
+  const loadUsers = async () => {
+    setUsersLoading(true);
+    try {
+      const result = await api.listUsers();
+      setUsers(result || []);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!user?.isAdmin) {
       navigate('/');
@@ -87,6 +107,12 @@ export function AdminPage() {
     loadResources();
     loadSubmissions();
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      loadUsers();
+    }
+  }, [activeTab]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,11 +180,52 @@ export function AdminPage() {
     }
   };
 
+  const handleToggleActive = async (targetUser: User) => {
+    try {
+      await api.updateUser(targetUser.id, { isActive: !targetUser.isActive });
+      await loadUsers();
+      showToast(t('toast.user.updated'));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Update failed');
+    }
+  };
+
+  const handleToggleAdmin = async (targetUser: User) => {
+    try {
+      await api.updateUser(targetUser.id, { isAdmin: !targetUser.isAdmin });
+      await loadUsers();
+      showToast(t('toast.user.updated'));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Update failed');
+    }
+  };
+
+  const handleDeleteUser = async (targetUser: User) => {
+    if (targetUser.id === user?.id) {
+      alert(t('admin.users.cannotDeleteSelf'));
+      return;
+    }
+    if (!confirm(t('admin.users.deleteConfirm'))) return;
+    try {
+      await api.deleteUser(targetUser.id);
+      await loadUsers();
+      showToast(t('toast.user.deleted'));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Delete failed');
+    }
+  };
+
   if (!user?.isAdmin) return null;
+
+  const tabs: { key: AdminTab; label: string }[] = [
+    { key: 'resources', label: t('admin.resources.title') },
+    { key: 'submissions', label: t('admin.submissions.title') },
+    { key: 'users', label: t('admin.users.title') },
+  ];
 
   return (
     <div className="page-fade mx-auto max-w-column px-6 sm:px-8 pt-16 pb-32">
-      <header className="border-b border-rule pb-8 flex items-baseline justify-between gap-6 flex-wrap mb-10">
+      <header className="border-b border-rule pb-8 flex items-baseline justify-between gap-6 flex-wrap mb-6">
         <div>
           <p className="text-mono text-[12px] uppercase tracking-wider2 text-moss mb-3">
             {t('home.hero.eyebrow')}
@@ -170,6 +237,7 @@ export function AdminPage() {
             setShowForm(true);
             setEditingId(null);
             setFormData(EMPTY_FORM);
+            setActiveTab('resources');
           }}
           className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2.5 border border-moss rounded-[2px] text-paper bg-moss hover:bg-paper hover:text-moss transition-colors"
         >
@@ -178,75 +246,171 @@ export function AdminPage() {
         </button>
       </header>
 
-      <section className="border border-rule rounded-[2px] overflow-hidden mb-10">
-        <button
-          type="button"
-          onClick={() => setSubmissionsOpen((prev) => !prev)}
-          className="w-full flex items-center justify-between gap-4 px-6 py-4 text-left hover:bg-paper/50 transition-colors"
-          aria-expanded={submissionsOpen}
-          aria-controls="submissions-panel"
-        >
-          <h2 className="font-display text-xl text-ink">{t('admin.submissions.title')}</h2>
-          <ChevronDown
-            size={20}
-            className={`text-ink-mute transition-transform ${submissionsOpen ? 'rotate-180' : ''}`}
-          />
-        </button>
+      <nav className="border-b border-rule mb-10" aria-label="Admin sections">
+        <div className="flex gap-2 -mb-px">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              aria-pressed={activeTab === tab.key}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab.key
+                  ? 'border-moss text-moss'
+                  : 'border-transparent text-ink-soft hover:text-ink'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </nav>
 
-        {submissionsOpen && (
-          <div id="submissions-panel" className="border-t border-rule">
-            {submissionsLoading ? (
-              <div className="p-8 text-center text-ink-soft">{t('admin.loading')}</div>
-            ) : submissions.length === 0 ? (
-              <div className="p-8 text-center text-ink-soft">{t('admin.submissions.empty')}</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px]">
-                  <thead className="border-b border-rule">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('submit.form.title')}</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.authors')}</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('profile.user')}</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('submit.form.year')}</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.submissions.pending')}</th>
-                      <th className="px-4 py-3 text-right text-sm font-medium text-ink">{t('admin.actions')}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-rule">
-                    {submissions.map((submission) => (
-                      <tr key={submission.id} className="hover:bg-paper/50">
-                        <td className="px-4 py-3 text-sm text-ink">{submission.title}</td>
-                        <td className="px-4 py-3 text-sm text-ink-mute">{submission.authors.join(', ')}</td>
-                        <td className="px-4 py-3 text-sm text-ink-mute">{submission.submittedBy.username}</td>
-                        <td className="px-4 py-3 text-sm text-ink-mute">{submission.year}</td>
-                        <td className="px-4 py-3 text-sm text-ink-mute">
-                          {new Date(submission.submittedAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            onClick={() => handleApprove(submission.id)}
-                            className="text-sm px-3 py-1.5 mr-2 border border-moss rounded-[2px] text-paper bg-moss hover:bg-paper hover:text-moss transition-colors"
-                          >
-                            {t('admin.submissions.approve')}
-                          </button>
-                          <button
-                            onClick={() => handleReject(submission.id)}
-                            className="text-sm px-3 py-1.5 border border-ochre rounded-[2px] text-ochre hover:bg-ochre hover:text-paper transition-colors"
-                          >
-                            {t('admin.submissions.reject')}
-                          </button>
-                        </td>
+      {activeTab === 'submissions' && (
+        <section className="border border-rule rounded-[2px] overflow-hidden mb-10">
+          <button
+            type="button"
+            onClick={() => setSubmissionsOpen((prev) => !prev)}
+            className="w-full flex items-center justify-between gap-4 px-6 py-4 text-left hover:bg-paper/50 transition-colors"
+            aria-expanded={submissionsOpen}
+            aria-controls="submissions-panel"
+          >
+            <h2 className="font-display text-xl text-ink">{t('admin.submissions.title')}</h2>
+            <ChevronDown
+              size={20}
+              className={`text-ink-mute transition-transform ${submissionsOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {submissionsOpen && (
+            <div id="submissions-panel" className="border-t border-rule">
+              {submissionsLoading ? (
+                <div className="p-8 text-center text-ink-soft">{t('admin.loading')}</div>
+              ) : submissions.length === 0 ? (
+                <div className="p-8 text-center text-ink-soft">{t('admin.submissions.empty')}</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[720px]">
+                    <thead className="border-b border-rule">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('submit.form.title')}</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.authors')}</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('profile.user')}</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('submit.form.year')}</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.submissions.pending')}</th>
+                        <th className="px-4 py-3 text-right text-sm font-medium text-ink">{t('admin.actions')}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-      </section>
+                    </thead>
+                    <tbody className="divide-y divide-rule">
+                      {submissions.map((submission) => (
+                        <tr key={submission.id} className="hover:bg-paper/50">
+                          <td className="px-4 py-3 text-sm text-ink">{submission.title}</td>
+                          <td className="px-4 py-3 text-sm text-ink-mute">{submission.authors.join(', ')}</td>
+                          <td className="px-4 py-3 text-sm text-ink-mute">{submission.submittedBy.username}</td>
+                          <td className="px-4 py-3 text-sm text-ink-mute">{submission.year}</td>
+                          <td className="px-4 py-3 text-sm text-ink-mute">
+                            {new Date(submission.submittedAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              onClick={() => handleApprove(submission.id)}
+                              className="text-sm px-3 py-1.5 mr-2 border border-moss rounded-[2px] text-paper bg-moss hover:bg-paper hover:text-moss transition-colors"
+                            >
+                              {t('admin.submissions.approve')}
+                            </button>
+                            <button
+                              onClick={() => handleReject(submission.id)}
+                              className="text-sm px-3 py-1.5 border border-ochre rounded-[2px] text-ochre hover:bg-ochre hover:text-paper transition-colors"
+                            >
+                              {t('admin.submissions.reject')}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      )}
 
-      {showForm && (
+      {activeTab === 'users' && (
+        <section className="border border-rule rounded-[2px] overflow-hidden mb-10">
+          {usersLoading ? (
+            <div className="p-8 text-center text-ink-soft">{t('admin.users.loading')}</div>
+          ) : users.length === 0 ? (
+            <div className="p-8 text-center text-ink-soft">{t('admin.users.empty')}</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px]">
+                <thead className="border-b border-rule">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.users.username')}</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.users.email')}</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.users.active')}</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.users.admin')}</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.users.registeredAt')}</th>
+                    <th className="px-4 py-3 text-right text-sm font-medium text-ink">{t('admin.actions')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-rule">
+                  {users.map((u) => (
+                    <tr key={u.id} className="hover:bg-paper/50">
+                      <td className="px-4 py-3 text-sm text-ink">{u.username}</td>
+                      <td className="px-4 py-3 text-sm text-ink-mute">{u.email}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <span className={u.isActive ? 'text-moss' : 'text-ochre'}>
+                          {u.isActive ? t('admin.users.active') : t('admin.users.inactive')}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-ink-mute">
+                        {u.isAdmin ? t('common.yes') : t('common.no')}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-ink-mute">
+                        {new Date(u.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => handleToggleActive(u)}
+                          aria-label={t('admin.users.toggleActive')}
+                          title={t('admin.users.toggleActive')}
+                          className="text-moss hover:text-ink transition-colors mr-3"
+                        >
+                          <UserCog size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleToggleAdmin(u)}
+                          aria-label={t('admin.users.toggleAdmin')}
+                          title={t('admin.users.toggleAdmin')}
+                          className="text-moss hover:text-ink transition-colors mr-3"
+                        >
+                          {u.isAdmin ? <ShieldOff size={18} /> : <Shield size={18} />}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(u)}
+                          disabled={u.id === user?.id}
+                          aria-label={t('admin.users.delete')}
+                          title={u.id === user?.id ? t('admin.users.cannotDeleteSelf') : t('admin.users.delete')}
+                          className={`transition-colors ${
+                            u.id === user?.id
+                              ? 'text-ink-soft cursor-not-allowed'
+                              : 'text-ink-mute hover:text-ochre'
+                          }`}
+                        >
+                          <UserX size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      {activeTab === 'resources' && showForm && (
         <div className="border border-rule rounded-[2px] p-6 mb-10">
           <h2 className="font-display text-2xl text-ink mb-5">
             {editingId ? t('admin.editResource') : t('admin.newResource')}
@@ -513,55 +677,57 @@ export function AdminPage() {
         </div>
       )}
 
-      <div className="border border-rule rounded-[2px] overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-ink-soft">{t('admin.loading')}</div>
-        ) : resources.length === 0 ? (
-          <div className="p-8 text-center text-ink-soft">{t('admin.noResources')}</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px]">
-              <thead className="border-b border-rule">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-ink">ID</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.title')}</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.type')}</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.year')}</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.discipline')}</th>
-                  <th className="px-4 py-3 text-right text-sm font-medium text-ink">{t('admin.actions')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-rule">
-                {resources.map((resource) => (
-                  <tr key={resource.id} className="hover:bg-paper/50">
-                    <td className="px-4 py-3 text-sm text-ink-mute">{resource.id}</td>
-                    <td className="px-4 py-3 text-sm text-ink">{resource.title}</td>
-                    <td className="px-4 py-3 text-sm text-ink-mute">{resource.type}</td>
-                    <td className="px-4 py-3 text-sm text-ink-mute">{resource.year}</td>
-                    <td className="px-4 py-3 text-sm text-ink-mute">{resource.discipline}</td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => handleEdit(resource)}
-                        aria-label={t('admin.editResource')}
-                        className="text-moss hover:text-ink transition-colors mr-3"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(resource.id)}
-                        aria-label={t('admin.deleteResource')}
-                        className="text-ink-mute hover:text-ochre transition-colors"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </td>
+      {activeTab === 'resources' && (
+        <div className="border border-rule rounded-[2px] overflow-hidden">
+          {loading ? (
+            <div className="p-8 text-center text-ink-soft">{t('admin.loading')}</div>
+          ) : resources.length === 0 ? (
+            <div className="p-8 text-center text-ink-soft">{t('admin.noResources')}</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px]">
+                <thead className="border-b border-rule">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-ink">ID</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.title')}</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.type')}</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.year')}</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.discipline')}</th>
+                    <th className="px-4 py-3 text-right text-sm font-medium text-ink">{t('admin.actions')}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                </thead>
+                <tbody className="divide-y divide-rule">
+                  {resources.map((resource) => (
+                    <tr key={resource.id} className="hover:bg-paper/50">
+                      <td className="px-4 py-3 text-sm text-ink-mute">{resource.id}</td>
+                      <td className="px-4 py-3 text-sm text-ink">{resource.title}</td>
+                      <td className="px-4 py-3 text-sm text-ink-mute">{resource.type}</td>
+                      <td className="px-4 py-3 text-sm text-ink-mute">{resource.year}</td>
+                      <td className="px-4 py-3 text-sm text-ink-mute">{resource.discipline}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => handleEdit(resource)}
+                          aria-label={t('admin.editResource')}
+                          className="text-moss hover:text-ink transition-colors mr-3"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(resource.id)}
+                          aria-label={t('admin.deleteResource')}
+                          className="text-ink-mute hover:text-ochre transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

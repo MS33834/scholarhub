@@ -60,6 +60,12 @@ export interface User {
   username: string
   isActive: boolean
   isAdmin: boolean
+  createdAt: string
+}
+
+export interface UserUpdate {
+  isActive?: boolean
+  isAdmin?: boolean
 }
 
 export interface FavoriteCreateResponse {

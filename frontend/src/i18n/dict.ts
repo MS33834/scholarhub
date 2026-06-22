@@ -62,6 +62,7 @@ export type Dict = {
   'resources.subtitle': string
   'resources.filter.type': string
   'resources.filter.discipline': string
+  'resources.filter.year': string
   'resources.filter.all': string
   'resources.empty': string
   'resources.summary': string        // accepts {n} — "Showing 8 resources"
@@ -173,6 +174,8 @@ export type Dict = {
   'toast.fav.removed': string
   'toast.cite.copied': string        // accepts {format}
   'toast.cite.failed': string
+  'toast.user.updated': string
+  'toast.user.deleted': string
 
   // ── Pagination ──────────────────────────────────────────────
   'pagination.label': string
@@ -208,8 +211,13 @@ export type Dict = {
   'lists.delete': string
   'lists.confirm.delete': string
   'lists.addTo': string
+  'lists.addToList': string
   'lists.removeFrom': string
   'lists.items': string              // accepts {count}
+  'lists.selectList': string
+  'lists.emptyForAdd': string
+  'lists.added': string
+  'lists.alreadyInList': string
   'lists.name': string
   'lists.namePlaceholder': string
   'lists.description': string
@@ -262,6 +270,7 @@ export type Dict = {
 
   // ── Admin ───────────────────────────────────────────────────
   'admin.title': string
+  'admin.resources.title': string
   'admin.addResource': string
   'admin.editResource': string
   'admin.newResource': string
@@ -295,6 +304,22 @@ export type Dict = {
   'admin.actions': string
   'admin.deleteResource': string
   'admin.confirmDelete': string
+
+  // ── Admin users ─────────────────────────────────────────────
+  'admin.users.title': string
+  'admin.users.username': string
+  'admin.users.email': string
+  'admin.users.active': string
+  'admin.users.inactive': string
+  'admin.users.admin': string
+  'admin.users.registeredAt': string
+  'admin.users.toggleActive': string
+  'admin.users.toggleAdmin': string
+  'admin.users.delete': string
+  'admin.users.deleteConfirm': string
+  'admin.users.cannotDeleteSelf': string
+  'admin.users.empty': string
+  'admin.users.loading': string
 
   // ── Admin submissions ───────────────────────────────────────
   'admin.submissions.title': string
@@ -420,6 +445,7 @@ const en: Dict = {
   'resources.subtitle': 'Browse the catalogue by type, discipline, or keyword.',
   'resources.filter.type': 'Type',
   'resources.filter.discipline': 'Discipline',
+  'resources.filter.year': 'Year',
   'resources.filter.all': 'All',
   'resources.empty': 'No resources match the current filters.',
   'resources.summary': 'Showing {n} resources',
@@ -537,6 +563,8 @@ const en: Dict = {
   'toast.fav.removed': 'Removed from favorites',
   'toast.cite.copied': '{format} citation copied to clipboard',
   'toast.cite.failed': 'Could not copy — please copy manually',
+  'toast.user.updated': 'User updated',
+  'toast.user.deleted': 'User deleted',
 
   // Common
   'common.yes': 'Yes',
@@ -582,8 +610,13 @@ const en: Dict = {
   'lists.delete': 'Delete list',
   'lists.confirm.delete': 'Delete this reading list? Resources will not be removed from the catalogue.',
   'lists.addTo': 'Add to list',
+  'lists.addToList': 'Add to list',
   'lists.removeFrom': 'Remove from list',
   'lists.items': '{count} items',
+  'lists.selectList': 'Select a list',
+  'lists.emptyForAdd': 'No reading lists. Create one first.',
+  'lists.added': 'Added to list',
+  'lists.alreadyInList': 'Already in this list',
   'lists.name': 'List name',
   'lists.namePlaceholder': 'Enter list name',
   'lists.description': 'Description',
@@ -676,6 +709,7 @@ const en: Dict = {
 
   // ── Admin ───────────────────────────────────────────────────
   'admin.title': 'Resource Management',
+  'admin.resources.title': 'Resources',
   'admin.addResource': 'Add Resource',
   'admin.editResource': 'Edit Resource',
   'admin.newResource': 'New Resource',
@@ -709,6 +743,22 @@ const en: Dict = {
   'admin.actions': 'Actions',
   'admin.deleteResource': 'Delete resource',
   'admin.confirmDelete': 'Are you sure you want to delete this resource?',
+
+  // ── Admin users ─────────────────────────────────────────────
+  'admin.users.title': 'User Management',
+  'admin.users.username': 'Username',
+  'admin.users.email': 'Email',
+  'admin.users.active': 'Active',
+  'admin.users.inactive': 'Inactive',
+  'admin.users.admin': 'Admin',
+  'admin.users.registeredAt': 'Registered',
+  'admin.users.toggleActive': 'Toggle active',
+  'admin.users.toggleAdmin': 'Toggle admin',
+  'admin.users.delete': 'Delete user',
+  'admin.users.deleteConfirm': 'Are you sure you want to delete this user?',
+  'admin.users.cannotDeleteSelf': 'You cannot delete your own account.',
+  'admin.users.empty': 'No users found.',
+  'admin.users.loading': 'Loading users...',
 
   // ── Admin submissions ───────────────────────────────────────
   'admin.submissions.title': 'Review Submissions',
@@ -779,6 +829,7 @@ const zh: Dict = {
   'resources.subtitle': '按类型、学科、关键词浏览整个目录。',
   'resources.filter.type': '类型',
   'resources.filter.discipline': '学科',
+  'resources.filter.year': '年份',
   'resources.filter.all': '全部',
   'resources.empty': '当前筛选下没有匹配的资源。',
   'resources.summary': '共 {n} 项',
@@ -886,6 +937,8 @@ const zh: Dict = {
   'toast.fav.removed': '已移出收藏',
   'toast.cite.copied': '{format} 引用已复制到剪贴板',
   'toast.cite.failed': '复制失败 — 请手动复制',
+  'toast.user.updated': '用户已更新',
+  'toast.user.deleted': '用户已删除',
 
   'common.yes': '是',
   'common.no': '否',
@@ -930,8 +983,13 @@ const zh: Dict = {
   'lists.delete': '删掉这个列表',
   'lists.confirm.delete': '确定要删掉这个阅读列表吗？资源本身不会被删。',
   'lists.addTo': '加到列表',
+  'lists.addToList': '加入书单',
   'lists.removeFrom': '从列表里删掉',
   'lists.items': '{count} 项',
+  'lists.selectList': '选择一个书单',
+  'lists.emptyForAdd': '暂无书单，请先创建。',
+  'lists.added': '已加入书单',
+  'lists.alreadyInList': '已在该书单中',
   'lists.name': '列表名称',
   'lists.namePlaceholder': '给列表起个名',
   'lists.description': '描述',
@@ -1024,6 +1082,7 @@ const zh: Dict = {
 
   // ── Admin ───────────────────────────────────────────────────
   'admin.title': '资源管理',
+  'admin.resources.title': '资源',
   'admin.addResource': '添加资源',
   'admin.editResource': '编辑资源',
   'admin.newResource': '新建资源',
@@ -1057,6 +1116,22 @@ const zh: Dict = {
   'admin.actions': '操作',
   'admin.deleteResource': '删除资源',
   'admin.confirmDelete': '确定要删除此资源吗？',
+
+  // ── Admin users ─────────────────────────────────────────────
+  'admin.users.title': '用户管理',
+  'admin.users.username': '用户名',
+  'admin.users.email': '邮箱',
+  'admin.users.active': '已激活',
+  'admin.users.inactive': '已禁用',
+  'admin.users.admin': '管理员',
+  'admin.users.registeredAt': '注册时间',
+  'admin.users.toggleActive': '切换激活状态',
+  'admin.users.toggleAdmin': '切换管理员',
+  'admin.users.delete': '删除用户',
+  'admin.users.deleteConfirm': '确定要删除该用户吗？',
+  'admin.users.cannotDeleteSelf': '不能删除自己的账号。',
+  'admin.users.empty': '暂无用户。',
+  'admin.users.loading': '加载用户中...',
 
   // ── Admin submissions ───────────────────────────────────────
   'admin.submissions.title': '审核提交',

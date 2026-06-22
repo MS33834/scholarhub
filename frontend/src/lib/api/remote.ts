@@ -16,6 +16,7 @@ import {
   type ResourceSubmissionCreate,
   type ResourceSubmissionListResponse,
   type ResourceSubmissionReview,
+  type UserUpdate,
 } from './types'
 
 /**
@@ -203,6 +204,22 @@ class RemoteApiClient {
 
   async getStats(): Promise<ResourceStats> {
     return this.request<ResourceStats>('/resources/stats')
+  }
+
+  // Users
+  async listUsers(): Promise<User[]> {
+    return this.request<User[]>('/users/')
+  }
+
+  async updateUser(id: number, updates: UserUpdate): Promise<User> {
+    return this.request<User>(`/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    })
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    return this.request<void>(`/users/${id}`, { method: 'DELETE' })
   }
 
   // Favorites

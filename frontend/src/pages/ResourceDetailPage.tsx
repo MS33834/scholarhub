@@ -14,6 +14,7 @@ import { useFavorites } from '@/hooks/useFavorites'
 import { useReadingHistory } from '@/hooks/useReadingHistory'
 import { useT } from '@/i18n/useLang'
 import { ResourceCard } from '@/components/ResourceCard'
+import { AddToListDropdown } from '@/components/AddToListDropdown'
 import { Skeleton } from '@/components/Skeleton'
 import { useResource, useResources } from '@/hooks/useResources'
 import { formatAuthors, formatNumber } from '@/utils/format'
@@ -241,8 +242,8 @@ export function ResourceDetailPage() {
         </div>
       </section>
 
-      {/* 操作区 - 4 按钮 */}
-      <section className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* 操作区 - 5 按钮 */}
+      <section className="mt-16 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {resource.downloadUrl && (
           <a
             href={resource.downloadUrl}
@@ -295,6 +296,7 @@ export function ResourceDetailPage() {
           {isFav ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
           {isFav ? t('detail.actions.saved') : t('detail.actions.save')}
         </button>
+        <AddToListDropdown resourceId={resource.id} variant="button" />
       </section>
 
       {/* 外部链接次要入口 */}

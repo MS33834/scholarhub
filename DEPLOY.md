@@ -38,7 +38,21 @@ cp .env.example .env
 | `SCHOLARHUB_JSON_LOGS` | 是否输出 JSON 结构化日志，生产建议 `true` |
 | `UVICORN_WORKERS` | 后端工作进程数，默认 2 |
 
-## 快速启动（单服务器）
+## 本地 Docker 构建验证
+
+在提交或部署前，可以直接从仓库根目录构建生产镜像，确认 Dockerfile 语法与路径正确：
+
+```bash
+# 后端镜像（构建上下文为仓库根目录）
+docker build -f infra/Dockerfile.backend -t scholarhub-backend:latest .
+
+# 前端镜像
+docker build -f infra/Dockerfile.frontend -t scholarhub-frontend:latest .
+```
+
+这两个命令仅验证构建是否成功，不会推送镜像。CI 工作流（`.github/workflows/ci.yml`）中也已加入相同的构建验证步骤。
+
+## 生产部署最小步骤
 
 ```bash
 # 1. 克隆代码
@@ -47,13 +61,22 @@ cd scholarhub
 
 # 2. 准备环境变量
 cp .env.example .env
-# 编辑 .env，修改所有密码和密钥
+# 编辑 .env，至少修改以下值：
+#   - POSTGRES_PASSWORD
+#   - SCHOLARHUB_SECRET_KEY（至少 32 字符）
+#   - SCHOLARHUB_ADMIN_PASSWORD
+#   - SCHOLARHUB_ALLOWED_HOSTS（不能为 *）
+#   - SCHOLARHUB_CORS_ORIGINS（改为实际域名）
 
-# 3. 启动生产栈
-docker compose -f docker-compose.prod.yml up -d
+# 3. 可选：先本地验证镜像可构建
+docker build -f infra/Dockerfile.backend -t scholarhub-backend:latest .
+docker build -f infra/Dockerfile.frontend -t scholarhub-frontend:latest .
 
-# 4. 查看日志
-docker compose -f docker-compose.prod.yml logs -f
+# 4. 启动生产栈
+docker compose -f infra/docker-compose.prod.yml up -d
+
+# 5. 查看日志
+docker compose -f infra/docker-compose.prod.yml logs -f
 ```
 
 访问 `http://<服务器IP>` 即可。
@@ -62,8 +85,8 @@ docker compose -f docker-compose.prod.yml logs -f
 
 ```bash
 git pull
-docker compose -f docker-compose.prod.yml build
-docker compose -f docker-compose.prod.yml up -d
+docker compose -f infra/docker-compose.prod.yml build
+docker compose -f infra/docker-compose.prod.yml up -d
 ```
 
 后端容器启动时会自动执行 Alembic `upgrade head`，无需手动改库。
@@ -71,11 +94,14 @@ docker compose -f docker-compose.prod.yml up -d
 ## 本地开发
 
 ```bash
+# 准备环境变量
+cp .env.example .env
+
 # 启动本地开发栈（包含 Postgres + backend + frontend）
-docker compose up -d
+docker compose -f infra/docker-compose.yml up --build -d
 
 # 或者只启动数据库，前端用 Vite 开发服务器
-docker compose up -d postgres
+docker compose -f infra/docker-compose.yml up -d db
 # 然后在项目根目录
 npm run dev
 ```
@@ -95,7 +121,7 @@ npm run dev
 迁移脚本已包含在镜像中。手动执行：
 
 ```bash
-docker compose -f docker-compose.prod.yml exec backend python -m alembic upgrade head
+docker compose -f infra/docker-compose.prod.yml exec backend python -m alembic upgrade head
 ```
 
 新增模型变更后，在本地生成迁移：
@@ -116,7 +142,7 @@ alembic revision --autogenerate -m "describe change"
 
 ```bash
 # 查看后端实时日志
-docker compose -f docker-compose.prod.yml logs -f backend
+docker compose -f infra/docker-compose.prod.yml logs -f backend
 
 # 追踪某次请求
 curl -H "X-Request-ID: debug-123" https://scholarhub.example/api/health

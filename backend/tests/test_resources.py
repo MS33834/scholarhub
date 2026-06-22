@@ -35,6 +35,42 @@ def sample_resource_payload():
     return SAMPLE_RESOURCE.copy()
 
 
+def _resource_payload(
+    resource_id: str,
+    authors: list[str] | None = None,
+    tags: list[str] | None = None,
+    discipline: str = "computer-science",
+    citation_authors: list[str] | None = None,
+) -> dict:
+    payload = {
+        "id": resource_id,
+        "type": "paper",
+        "title": f"Paper {resource_id}",
+        "authors": authors or ["Charlie Other"],
+        "year": 2024,
+        "discipline": discipline,
+        "subdiscipline": "machine-learning",
+        "tags": tags or [],
+        "venue": "Journal of Testing",
+        "abstract": "Test abstract.",
+        "preview": "Test preview.",
+        "doi": f"10.1234/test.{resource_id}",
+        "downloadUrl": "https://example.com/download.pdf",
+        "externalUrl": "https://example.com/paper",
+        "addedAt": "2024-01-01",
+        "citation": {
+            "apa": "Author. (2024). Test.",
+            "mla": "Author. \"Test.\" 2024.",
+            "gbt": "Author. Test[J]. 2024.",
+            "bibtex": "@article{test, title={Test}}",
+        },
+        "citations": 1,
+    }
+    if citation_authors:
+        payload["citation"]["authors"] = citation_authors
+    return payload
+
+
 @pytest.mark.asyncio
 async def test_list_resources_empty(client):
     response = await client.get("/api/resources/")
@@ -159,3 +195,130 @@ async def test_search_resources(client, admin_user, sample_resource_payload):
     assert response.status_code == 200
     data = response.json()
     assert len(data["data"]) == 0
+
+
+@pytest.mark.asyncio
+async def test_get_related_resources_sorted(client, admin_user):
+    target = _resource_payload(
+        "target-paper",
+        authors=["Alice Author", "Bob Author"],
+        tags=["machine-learning", "ai"],
+        discipline="computer-science",
+    )
+    same_author = _resource_payload(
+        "same-author-paper",
+        authors=["Alice Author"],
+        tags=[],
+        discipline="physics",
+    )
+    same_tag = _resource_payload(
+        "same-tag-paper",
+        authors=["Charlie Other"],
+        tags=["ai"],
+        discipline="physics",
+    )
+    same_discipline = _resource_payload(
+        "same-discipline-paper",
+        authors=["Charlie Other"],
+        tags=[],
+        discipline="computer-science",
+    )
+    unrelated = _resource_payload(
+        "unrelated-paper",
+        authors=["Dave Other"],
+        tags=["biology-tag"],
+        discipline="biology",
+    )
+
+    for payload in [target, same_author, same_tag, same_discipline, unrelated]:
+        response = await client.post(
+            "/api/resources/",
+            json=payload,
+            headers={"Authorization": f"Bearer {admin_user['token']}"},
+        )
+        assert response.status_code == 201
+
+    response = await client.get("/api/resources/target-paper/related")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    related_ids = [item["id"] for item in data]
+
+    assert "target-paper" not in related_ids
+    assert "unrelated-paper" not in related_ids
+    assert related_ids == [
+        "same-author-paper",
+        "same-tag-paper",
+        "same-discipline-paper",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_get_related_resources_by_citation_authors(client, admin_user):
+    target = _resource_payload(
+        "target-citation-paper",
+        authors=["Eve Author"],
+        tags=[],
+        discipline="computer-science",
+        citation_authors=["Alice Author"],
+    )
+    related_by_citation = _resource_payload(
+        "related-citation-paper",
+        authors=["Alice Author"],
+        tags=[],
+        discipline="physics",
+    )
+
+    for payload in [target, related_by_citation]:
+        response = await client.post(
+            "/api/resources/",
+            json=payload,
+            headers={"Authorization": f"Bearer {admin_user['token']}"},
+        )
+        assert response.status_code == 201
+
+    response = await client.get("/api/resources/target-citation-paper/related")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert len(data) == 1
+    assert data[0]["id"] == "related-citation-paper"
+
+
+@pytest.mark.asyncio
+async def test_get_related_resources_not_found(client):
+    response = await client.get("/api/resources/nonexistent/related")
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_related_resources_limit(client, admin_user):
+    target = _resource_payload(
+        "target-limit-paper",
+        authors=["Alice Author"],
+        tags=["shared-tag"],
+        discipline="computer-science",
+    )
+    same_tag_1 = _resource_payload(
+        "same-tag-limit-1",
+        authors=["Bob Other"],
+        tags=["shared-tag"],
+        discipline="physics",
+    )
+    same_tag_2 = _resource_payload(
+        "same-tag-limit-2",
+        authors=["Charlie Other"],
+        tags=["shared-tag"],
+        discipline="physics",
+    )
+
+    for payload in [target, same_tag_1, same_tag_2]:
+        response = await client.post(
+            "/api/resources/",
+            json=payload,
+            headers={"Authorization": f"Bearer {admin_user['token']}"},
+        )
+        assert response.status_code == 201
+
+    response = await client.get("/api/resources/target-limit-paper/related?limit=1")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert len(data) == 1

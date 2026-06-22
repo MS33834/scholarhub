@@ -44,6 +44,11 @@ class UserResponse(UserBase):
     is_admin: bool
 
 
+class UserUpdate(CamelBaseModel):
+    is_active: bool | None = None
+    is_admin: bool | None = None
+
+
 class UserBrief(CamelBaseModel):
     model_config = ConfigDict(
         from_attributes=True, populate_by_name=True, alias_generator=_to_camel
@@ -76,6 +81,7 @@ class Citation(CamelBaseModel):
     mla: str
     gbt: str
     bibtex: str
+    authors: list[str] | None = None
 
 
 class ResourceBase(CamelBaseModel):
@@ -139,6 +145,15 @@ class PaginationMeta(CamelBaseModel):
 
 class ResourceListResponse(CamelBaseModel):
     data: list[ResourceResponse]
+    meta: PaginationMeta
+
+
+class ResourceRelatedResponse(CamelBaseModel):
+    data: list[ResourceResponse]
+
+
+class UserListResponse(CamelBaseModel):
+    data: list[UserResponse]
     meta: PaginationMeta
 
 

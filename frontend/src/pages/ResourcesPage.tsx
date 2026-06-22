@@ -8,6 +8,7 @@ import type { ResourceType } from '@/types'
 
 type TypeFilter = ResourceType | 'all'
 type DisciplineFilter = string // 'all' or Discipline
+type YearFilter = number | 'all'
 
 const typeOrder: ResourceType[] = ['paper', 'dataset', 'book', 'tutorial']
 
@@ -61,14 +62,18 @@ export function ResourcesPage() {
   const { t, lang } = useT()
   const [type, setType] = useState<TypeFilter>('all')
   const [discipline, setDiscipline] = useState<DisciplineFilter>('all')
+  const [year, setYear] = useState<YearFilter>('all')
+  const [page, setPage] = useState(1)
   const disciplines = useDisciplines()
 
   const filters = useMemo(
     () => ({
       type: type === 'all' ? undefined : type,
       discipline: discipline === 'all' ? undefined : discipline,
+      year: year === 'all' ? undefined : year,
+      page,
     }),
-    [type, discipline]
+    [type, discipline, year, page]
   )
 
   const { resources: filtered, loading, error, meta } = useResources({ filters })
@@ -78,6 +83,13 @@ export function ResourcesPage() {
     value: d.slug,
     label: lang === 'en' ? d.nameEn : d.name,
   }))
+
+  const yearOptions = useMemo(() => {
+    const years = [...new Set(filtered.map((r) => r.year))]
+    return years
+      .sort((a, b) => b - a)
+      .map((y) => ({ value: String(y), label: String(y) }))
+  }, [filtered])
 
   return (
     <div className="page-fade mx-auto max-w-column px-6 sm:px-8 pt-16 pb-32">
@@ -97,13 +109,28 @@ export function ResourcesPage() {
           label={t('resources.filter.type')}
           options={typeOptions}
           value={type}
-          onChange={(v) => setType(v as TypeFilter)}
+          onChange={(v) => {
+            setType(v as TypeFilter)
+            setPage(1)
+          }}
         />
         <FilterChipGroup
           label={t('resources.filter.discipline')}
           options={disciplineOptions}
           value={discipline}
-          onChange={(v) => setDiscipline(v)}
+          onChange={(v) => {
+            setDiscipline(v)
+            setPage(1)
+          }}
+        />
+        <FilterChipGroup
+          label={t('resources.filter.year')}
+          options={yearOptions}
+          value={String(year)}
+          onChange={(v) => {
+            setYear(v === 'all' ? 'all' : Number(v))
+            setPage(1)
+          }}
         />
       </div>
 
@@ -128,7 +155,12 @@ export function ResourcesPage() {
               <SearchX className="text-ink-mute mb-5" size={40} strokeWidth={1} />
               <p className="font-display text-3xl text-ink">{t('resources.empty')}</p>
               <button
-                onClick={() => { setType('all'); setDiscipline('all') }}
+                onClick={() => {
+                  setType('all')
+                  setDiscipline('all')
+                  setYear('all')
+                  setPage(1)
+                }}
                 className="mt-8 inline-flex items-center gap-2 text-sm text-ink-soft hover:text-moss transition-colors group"
               >
                 {t('type.all')} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />

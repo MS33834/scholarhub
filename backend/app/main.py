@@ -10,6 +10,7 @@ from app.api.favorites import router as favorites_router
 from app.api.history import router as history_router
 from app.api.resources import router as resources_router
 from app.api.submissions import router as submissions_router
+from app.api.users import router as users_router
 from app.core.config import settings
 from app.core.limiter import limiter, rate_limit
 from app.core.logging import configure_logging
@@ -87,6 +88,7 @@ app.include_router(disciplines_router, prefix="/api")
 app.include_router(favorites_router, prefix="/api")
 app.include_router(history_router, prefix="/api")
 app.include_router(submissions_router, prefix="/api")
+app.include_router(users_router, prefix="/api")
 
 
 @app.get("/")

@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { AdminPage } from './AdminPage'
 import { PageTestWrapper, RouteLocation } from '@/test/test-utils'
 import { useAuth } from '@/store/authStore'
 import { api } from '@/lib/api'
 import type { Resource } from '@/types'
+import type { User } from '@/lib/api'
 
 vi.mock('@/lib/api', () => ({
   api: {
@@ -14,6 +16,9 @@ vi.mock('@/lib/api', () => ({
     deleteResource: vi.fn(),
     listPendingSubmissions: vi.fn(),
     reviewSubmission: vi.fn(),
+    listUsers: vi.fn(),
+    updateUser: vi.fn(),
+    deleteUser: vi.fn(),
   },
 }))
 
@@ -36,6 +41,25 @@ const mockResources: Resource[] = [
   },
 ]
 
+const mockUsers: User[] = [
+  {
+    id: 1,
+    username: 'admin',
+    email: 'admin@example.com',
+    isActive: true,
+    isAdmin: true,
+    createdAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 2,
+    username: 'regular',
+    email: 'regular@example.com',
+    isActive: true,
+    isAdmin: false,
+    createdAt: '2024-02-01T00:00:00Z',
+  },
+]
+
 function setup() {
   return render(
     <PageTestWrapper>
@@ -49,6 +73,9 @@ describe('AdminPage', () => {
   beforeEach(() => {
     vi.mocked(api.listResources).mockResolvedValue({ data: mockResources, meta: { total: 1, page: 1, pageSize: 20, totalPages: 1 } })
     vi.mocked(api.listPendingSubmissions).mockResolvedValue({ data: [], meta: { total: 0, page: 1, pageSize: 20, totalPages: 0 } })
+    vi.mocked(api.listUsers).mockResolvedValue(mockUsers)
+    vi.mocked(api.updateUser).mockResolvedValue({ ...mockUsers[1], isAdmin: true })
+    vi.mocked(api.deleteUser).mockResolvedValue(undefined)
   })
 
   it('redirects non-admin users to home', async () => {
@@ -82,5 +109,23 @@ describe('AdminPage', () => {
     await waitFor(() => {
       expect(screen.getByText(/No resources found/i)).toBeInTheDocument()
     })
+  })
+
+  it('renders user management tab and lists users', async () => {
+    useAuth.setState({ user: { id: 1, username: 'admin', email: 'admin@example.com', isAdmin: true }, isAuthenticated: true, isLoading: false })
+    setup()
+    const user = userEvent.setup()
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /User Management/i })).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: /User Management/i }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('cell', { name: /regular@example.com/i })).toBeInTheDocument()
+    })
+
+    expect(screen.getAllByRole('row')).toHaveLength(mockUsers.length + 1)
   })
 })

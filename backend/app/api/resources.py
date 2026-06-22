@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy import String, func, select
+from sqlalchemy import String, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_admin
@@ -13,6 +13,7 @@ from app.schemas import (
     PaginationMeta,
     ResourceCreate,
     ResourceListResponse,
+    ResourceRelatedResponse,
     ResourceResponse,
     ResourceStats,
     ResourceUpdate,
@@ -24,6 +25,8 @@ DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 200
 DEFAULT_SORT = "added_at"
 
+RELATED_MAX_LIMIT = 10
+
 
 def _apply_sort(query, sort: str | None, order: str | None):
     """Apply ordering to keep pagination deterministic."""
@@ -31,6 +34,17 @@ def _apply_sort(query, sort: str | None, order: str | None):
     if order == "desc":
         return query.order_by(sort_column.desc(), Resource.id.asc())
     return query.order_by(sort_column.asc(), Resource.id.asc())
+
+
+def _author_set(resource: Resource) -> set[str]:
+    """Return the union of authors from both the authors field and citation.authors."""
+    authors: set[str] = set(resource.authors or [])
+    citation = resource.citation
+    if isinstance(citation, dict):
+        citation_authors = citation.get("authors")
+        if isinstance(citation_authors, list):
+            authors.update(str(author) for author in citation_authors)
+    return authors
 
 
 @router.get("/", response_model=ResourceListResponse)
@@ -116,6 +130,56 @@ async def get_resource_stats(request: Request, db: AsyncSession = Depends(get_db
     by_discipline = {row[0]: row[1] for row in discipline_result.all()}
 
     return ResourceStats(total=total, by_type=by_type, by_discipline=by_discipline)
+
+
+@router.get("/{resource_id}/related", response_model=ResourceRelatedResponse)
+@rate_limit(f"{settings.rate_limit_per_minute}/minute")
+async def get_related_resources(
+    request: Request,
+    resource_id: str,
+    limit: int = Query(default=RELATED_MAX_LIMIT, ge=1, le=50),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Resource).where(Resource.id == resource_id))
+    target = result.scalar_one_or_none()
+    if not target:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
+
+    target_authors = _author_set(target)
+    target_tags = set(target.tags or [])
+
+    # Build a broad, database-agnostic filter that captures any resource
+    # sharing a discipline, tag, or author (including citation.authors).
+    # False positives are removed by the precise Python scoring below.
+    conditions: list = [Resource.discipline == target.discipline]
+    for tag in target_tags:
+        conditions.append(Resource.tags.cast(String).ilike(f"%{tag}%"))
+    for author in target_authors:
+        conditions.append(Resource.authors.cast(String).ilike(f"%{author}%"))
+        conditions.append(Resource.citation.cast(String).ilike(f"%{author}%"))
+
+    result = await db.execute(select(Resource).where(Resource.id != resource_id, or_(*conditions)))
+    candidates = result.scalars().all()
+
+    def _score(resource: Resource) -> int:
+        score = 0
+        author_overlap = len(_author_set(resource) & target_authors)
+        if author_overlap:
+            score += author_overlap * 100
+        tag_overlap = len(set(resource.tags or []) & target_tags)
+        if tag_overlap:
+            score += tag_overlap * 10
+        if resource.discipline == target.discipline:
+            score += 1
+        return score
+
+    scored = [(resource, _score(resource)) for resource in candidates if _score(resource) > 0]
+    scored.sort(key=lambda item: (-item[1], item[0].id))
+
+    top = scored[:limit]
+    return ResourceRelatedResponse(
+        data=[ResourceResponse.model_validate(resource) for resource, _ in top]
+    )
 
 
 @router.get("/{resource_id}", response_model=ResourceResponse)

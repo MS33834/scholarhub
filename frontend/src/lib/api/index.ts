@@ -18,6 +18,7 @@ import {
   type ResourceSubmissionListResponse,
   type ResourceSubmissionReview,
   type User,
+  type UserUpdate,
 } from './types'
 
 /**
@@ -108,6 +109,22 @@ class Api {
     return local.getStats()
   }
 
+  // Users (remote only)
+  async listUsers(): Promise<User[]> {
+    if (!isRemote) throw new Error('User management requires a remote backend')
+    return remoteApi.listUsers()
+  }
+
+  async updateUser(id: number, updates: UserUpdate): Promise<User> {
+    if (!isRemote) throw new Error('User management requires a remote backend')
+    return remoteApi.updateUser(id, updates)
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    if (!isRemote) throw new Error('User management requires a remote backend')
+    return remoteApi.deleteUser(id)
+  }
+
   // Favorites (local mode returns empty list; UI still allows localStorage toggle)
   async getFavorites(): Promise<Resource[]> {
     if (isRemote) return remoteApi.getFavorites()
@@ -185,6 +202,7 @@ export type {
   ResourceSubmissionListResponse,
   ResourceSubmissionReview,
   User,
+  UserUpdate,
 }
 
 export { env } from '@/lib/env'
