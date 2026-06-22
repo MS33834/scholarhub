@@ -173,6 +173,7 @@ class RemoteApiClient {
     if (filters.type) params.append('type', filters.type)
     if (filters.discipline) params.append('discipline', filters.discipline)
     if (filters.year !== undefined) params.append('year', String(filters.year))
+    if (filters.tag) params.append('tags', filters.tag)
     if (filters.q) params.append('q', filters.q)
     if (filters.page !== undefined) params.append('page', String(filters.page))
     if (filters.pageSize !== undefined) params.append('page_size', String(filters.pageSize))

@@ -32,6 +32,11 @@ function filterResources(resources: Resource[], filters: ResourceFilters): Resou
     filtered = filtered.filter((r) => r.year === filters.year)
   }
 
+  if (filters.tag) {
+    const tag = filters.tag.toLowerCase()
+    filtered = filtered.filter((r) => r.tags.some((t) => t.toLowerCase() === tag))
+  }
+
   if (filters.q) {
     const query = filters.q.toLowerCase()
     filtered = filtered.filter(

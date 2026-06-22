@@ -9,6 +9,7 @@ import type { ResourceType } from '@/types'
 type TypeFilter = ResourceType | 'all'
 type DisciplineFilter = string // 'all' or Discipline
 type YearFilter = number | 'all'
+type TagFilter = string // 'all' or tag
 
 const typeOrder: ResourceType[] = ['paper', 'dataset', 'book', 'tutorial']
 
@@ -63,6 +64,7 @@ export function ResourcesPage() {
   const [type, setType] = useState<TypeFilter>('all')
   const [discipline, setDiscipline] = useState<DisciplineFilter>('all')
   const [year, setYear] = useState<YearFilter>('all')
+  const [tag, setTag] = useState<TagFilter>('all')
   const [page, setPage] = useState(1)
   const disciplines = useDisciplines()
 
@@ -71,9 +73,10 @@ export function ResourcesPage() {
       type: type === 'all' ? undefined : type,
       discipline: discipline === 'all' ? undefined : discipline,
       year: year === 'all' ? undefined : year,
+      tag: tag === 'all' ? undefined : tag,
       page,
     }),
-    [type, discipline, year, page]
+    [type, discipline, year, tag, page]
   )
 
   const { resources: filtered, loading, error, meta } = useResources({ filters })
@@ -89,6 +92,18 @@ export function ResourcesPage() {
     return years
       .sort((a, b) => b - a)
       .map((y) => ({ value: String(y), label: String(y) }))
+  }, [filtered])
+
+  const tagOptions = useMemo(() => {
+    const counts = new Map<string, number>()
+    filtered.forEach((r) => {
+      r.tags.forEach((t) => {
+        counts.set(t, (counts.get(t) || 0) + 1)
+      })
+    })
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([name]) => ({ value: name, label: name }))
   }, [filtered])
 
   return (
@@ -132,6 +147,17 @@ export function ResourcesPage() {
             setPage(1)
           }}
         />
+        {tagOptions.length > 0 && (
+          <FilterChipGroup
+            label={t('resources.filter.tag')}
+            options={tagOptions}
+            value={tag}
+            onChange={(v) => {
+              setTag(v)
+              setPage(1)
+            }}
+          />
+        )}
       </div>
 
       <section className="mt-12">
@@ -159,6 +185,7 @@ export function ResourcesPage() {
                   setType('all')
                   setDiscipline('all')
                   setYear('all')
+                  setTag('all')
                   setPage(1)
                 }}
                 className="mt-8 inline-flex items-center gap-2 text-sm text-ink-soft hover:text-moss transition-colors group"

@@ -88,6 +88,7 @@ async def list_resources(
     type: str | None = None,
     discipline: str | None = None,
     year: int | None = None,
+    tags: Annotated[list[str] | None, Query()] = None,
     q: str | None = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
@@ -107,6 +108,9 @@ async def list_resources(
         filters.append(Resource.discipline == discipline)
     if year:
         filters.append(Resource.year == year)
+    if tags:
+        for tag in tags:
+            filters.append(Resource.tags.cast(Text).ilike(f"%{tag}%"))
 
     rank = None
     relevance_available = False

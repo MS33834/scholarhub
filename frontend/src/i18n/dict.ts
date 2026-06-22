@@ -63,6 +63,7 @@ export type Dict = {
   'resources.filter.type': string
   'resources.filter.discipline': string
   'resources.filter.year': string
+  'resources.filter.tag': string
   'resources.filter.all': string
   'resources.empty': string
   'resources.summary': string        // accepts {n} — "Showing 8 resources"
@@ -451,6 +452,7 @@ const en: Dict = {
   'resources.filter.type': 'Type',
   'resources.filter.discipline': 'Discipline',
   'resources.filter.year': 'Year',
+  'resources.filter.tag': 'Tag',
   'resources.filter.all': 'All',
   'resources.empty': 'No resources match the current filters.',
   'resources.summary': 'Showing {n} resources',
@@ -840,6 +842,7 @@ const zh: Dict = {
   'resources.filter.type': '类型',
   'resources.filter.discipline': '学科',
   'resources.filter.year': '年份',
+  'resources.filter.tag': '标签',
   'resources.filter.all': '全部',
   'resources.empty': '当前筛选下没有匹配的资源。',
   'resources.summary': '共 {n} 项',

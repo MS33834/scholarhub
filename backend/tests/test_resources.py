@@ -374,6 +374,26 @@ async def test_search_resources_with_filters(client, admin_user):
 
 
 @pytest.mark.asyncio
+async def test_list_resources_filter_by_tag(client, admin_user):
+    tagged = _resource_payload("tagged-paper", tags=["neural-networks", "pytorch"])
+    untagged = _resource_payload("untagged-paper", tags=["other"])
+
+    for payload in [tagged, untagged]:
+        response = await client.post(
+            "/api/resources/",
+            json=payload,
+            headers={"Authorization": f"Bearer {admin_user['token']}"},
+        )
+        assert response.status_code == 201
+
+    response = await client.get("/api/resources/?tags=neural-networks")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert len(data) == 1
+    assert data[0]["id"] == "tagged-paper"
+
+
+@pytest.mark.asyncio
 async def test_search_resources_relevance_ranking(client, admin_user, db_session):
     if db_session.bind.dialect.name != "postgresql":
         pytest.skip("Full-text relevance ranking requires PostgreSQL")

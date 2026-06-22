@@ -17,6 +17,7 @@ export interface ResourceFilters {
   type?: ResourceType
   discipline?: Discipline | string
   year?: number
+  tag?: string
   q?: string
   page?: number
   pageSize?: number
