@@ -95,6 +95,7 @@ export type Dict = {
   'detail.cite.bibtex': string
   'detail.cite.previewAll': string
   'detail.related.title': string
+  'detail.related.error': string
   'detail.notFound.title': string
   'detail.notFound.body': string
   // ── Discipline page ─────────────────────────────────────────
@@ -223,6 +224,10 @@ export type Dict = {
   'lists.description': string
   'lists.descriptionPlaceholder': string
   'lists.noResources': string
+  'lists.exportJson': string
+  'lists.removeFromList': string
+  'lists.exportEmpty': string
+  'lists.exported': string
 
   // ── Authentication ──────────────────────────────────────────
   'auth.login.title': string
@@ -478,6 +483,7 @@ const en: Dict = {
   'detail.cite.bibtex': 'BibTeX',
   'detail.cite.previewAll': 'Preview all citation formats',
   'detail.related.title': 'You may also like',
+  'detail.related.error': 'Failed to load related resources.',
   'detail.notFound.title': 'Resource not found',
   'detail.notFound.body': 'The resource you requested does not exist in the catalogue.',
 
@@ -622,6 +628,10 @@ const en: Dict = {
   'lists.description': 'Description',
   'lists.descriptionPlaceholder': 'Enter description (optional)',
   'lists.noResources': 'No resources in this list yet.',
+  'lists.exportJson': 'Export JSON',
+  'lists.removeFromList': 'Remove from list',
+  'lists.exportEmpty': 'No resources to export.',
+  'lists.exported': 'Reading list exported.',
 
   // ── Export ──────────────────────────────────────────────────
   'export.title': 'Export',
@@ -860,6 +870,7 @@ const zh: Dict = {
   'detail.cite.bibtex': 'BibTeX',
   'detail.cite.previewAll': '预览所有引用格式',
   'detail.related.title': '你可能也会喜欢',
+  'detail.related.error': '加载相关资源失败。',
   'detail.notFound.title': '资源未找到',
   'detail.notFound.body': '请求的资源不在目录中。',
 
@@ -995,6 +1006,10 @@ const zh: Dict = {
   'lists.description': '描述',
   'lists.descriptionPlaceholder': '简单描述一下（可选）',
   'lists.noResources': '这个列表里还没东西。',
+  'lists.exportJson': '导出 JSON',
+  'lists.removeFromList': '从书单移除',
+  'lists.exportEmpty': '没有可导出的资源。',
+  'lists.exported': '书单已导出。',
 
   // ── Export ──────────────────────────────────────────────────
   'export.title': '导出',

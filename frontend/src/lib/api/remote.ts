@@ -3,6 +3,7 @@ import type { Resource } from '@/types'
 import {
   type ResourceFilters,
   type PaginatedResponse,
+  type RelatedResourcesResponse,
   type ResourceStats,
   type AuthResponse,
   type LoginCredentials,
@@ -12,6 +13,9 @@ import {
   type FavoriteCreateResponse,
   type HistoryCreateResponse,
   type HistoryEntry,
+  type ReadingList,
+  type ReadingListCreate,
+  type ReadingListUpdate,
   type ResourceSubmission,
   type ResourceSubmissionCreate,
   type ResourceSubmissionListResponse,
@@ -184,6 +188,13 @@ class RemoteApiClient {
     return this.request<Resource>(`/resources/${id}`)
   }
 
+  async getRelatedResources(resourceId: string, limit?: number): Promise<RelatedResourcesResponse> {
+    const params = new URLSearchParams()
+    if (limit !== undefined) params.append('limit', String(limit))
+    const query = params.toString()
+    return this.request<RelatedResourcesResponse>(`/resources/${resourceId}/related${query ? `?${query}` : ''}`)
+  }
+
   async createResource(resource: Partial<Resource>): Promise<Resource> {
     return this.request<Resource>('/resources/', {
       method: 'POST',
@@ -248,6 +259,53 @@ class RemoteApiClient {
 
   async removeFromHistory(resourceId: string): Promise<void> {
     return this.request<void>(`/history/${resourceId}`, { method: 'DELETE' })
+  }
+
+  // Reading lists
+  async getReadingLists(): Promise<ReadingList[]> {
+    return this.request<ReadingList[]>('/reading-lists/')
+  }
+
+  async createReadingList(data: ReadingListCreate): Promise<ReadingList> {
+    const body: Record<string, unknown> = { name: data.name }
+    if (data.description !== undefined) body.description = data.description
+    if (data.isPublic !== undefined) body.is_public = data.isPublic
+    return this.request<ReadingList>('/reading-lists/', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  }
+
+  async getReadingList(id: string): Promise<ReadingList> {
+    return this.request<ReadingList>(`/reading-lists/${id}`)
+  }
+
+  async updateReadingList(id: string, data: ReadingListUpdate): Promise<ReadingList> {
+    const body: Record<string, unknown> = {}
+    if (data.name !== undefined) body.name = data.name
+    if (data.description !== undefined) body.description = data.description
+    if (data.isPublic !== undefined) body.is_public = data.isPublic
+    return this.request<ReadingList>(`/reading-lists/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    })
+  }
+
+  async deleteReadingList(id: string): Promise<void> {
+    return this.request<void>(`/reading-lists/${id}`, { method: 'DELETE' })
+  }
+
+  async addReadingListItem(listId: string, resourceId: string): Promise<ReadingList> {
+    return this.request<ReadingList>(`/reading-lists/${listId}/items`, {
+      method: 'POST',
+      body: JSON.stringify({ resource_id: resourceId }),
+    })
+  }
+
+  async removeReadingListItem(listId: string, resourceId: string): Promise<ReadingList> {
+    return this.request<ReadingList>(`/reading-lists/${listId}/items/${resourceId}`, {
+      method: 'DELETE',
+    })
   }
 
   // Resource submissions

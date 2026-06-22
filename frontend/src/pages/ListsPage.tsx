@@ -1,14 +1,16 @@
-import { useReadingLists } from '@/store/readingLists'
+import { useReadingLists } from '@/hooks/useReadingLists'
 import { useT } from '@/i18n/useLang'
-import { Trash2, X, BookMarked, Plus, ArrowRight } from 'lucide-react'
+import { Trash2, X, BookMarked, Plus, ArrowRight, Download } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { ResourceCard } from '@/components/ResourceCard'
 import { Skeleton } from '@/components/Skeleton'
 import { useResources } from '@/hooks/useResources'
+import { useUI } from '@/store'
 
 export function ListsPage() {
   const { t } = useT()
-  const { lists, createList, deleteList, getAllLists } = useReadingLists()
+  const showToast = useUI((s) => s.showToast)
+  const { lists, createList, deleteList, removeFromList, getAllLists } = useReadingLists()
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [newListName, setNewListName] = useState('')
   const [newListDesc, setNewListDesc] = useState('')
@@ -37,22 +39,65 @@ export function ListsPage() {
       .filter((r): r is NonNullable<typeof r> => r !== undefined)
   }, [selectedListIds, selectedListResources])
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (newListName.trim()) {
-      createList(newListName.trim(), newListDesc.trim())
-      setNewListName('')
-      setNewListDesc('')
-      setShowCreateDialog(false)
+      try {
+        await createList(newListName.trim(), newListDesc.trim())
+        setNewListName('')
+        setNewListDesc('')
+        setShowCreateDialog(false)
+      } catch {
+        // Error state is handled inside the hook.
+      }
     }
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm(t('lists.confirm.delete'))) {
-      deleteList(id)
-      if (selectedList === id) {
-        setSelectedList(null)
+      try {
+        await deleteList(id)
+        if (selectedList === id) {
+          setSelectedList(null)
+        }
+      } catch {
+        // Error state is handled inside the hook.
       }
     }
+  }
+
+  const handleRemove = async (resourceId: string) => {
+    if (!selectedList) return
+    try {
+      await removeFromList(selectedList, resourceId)
+    } catch {
+      // Error state is handled inside the hook.
+    }
+  }
+
+  const handleExport = () => {
+    if (!selectedListData || selectedResourcesOrdered.length === 0) {
+      showToast(t('lists.exportEmpty'))
+      return
+    }
+
+    const payload = {
+      id: selectedListData.id,
+      name: selectedListData.name,
+      description: selectedListData.description,
+      exportedAt: new Date().toISOString(),
+      resources: selectedResourcesOrdered,
+    }
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${selectedListData.name.replace(/\s+/g, '_')}_reading_list.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    showToast(t('lists.exported'))
   }
 
   return (
@@ -186,13 +231,22 @@ export function ListsPage() {
                   <p className="mt-1 text-sm text-ink-soft">{selectedListData.description}</p>
                 )}
               </div>
-              <button
-                onClick={() => setSelectedList(null)}
-                className="p-2 text-ink-mute hover:text-ink transition-colors"
-                aria-label={t('nav.close')}
-              >
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExport}
+                  disabled={selectedResourcesOrdered.length === 0}
+                  className="inline-flex items-center gap-2 text-sm font-medium px-3 py-2 border border-rule rounded-[2px] text-ink-soft hover:text-ink hover:border-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Download size={16} /> {t('lists.exportJson')}
+                </button>
+                <button
+                  onClick={() => setSelectedList(null)}
+                  className="p-2 text-ink-mute hover:text-ink transition-colors"
+                  aria-label={t('nav.close')}
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
             {loading ? (
               <div className="space-y-5">
@@ -207,7 +261,17 @@ export function ListsPage() {
             ) : (
               <div className="space-y-5">
                 {selectedResourcesOrdered.map((resource) => (
-                  <ResourceCard key={resource.id} resource={resource} />
+                  <div key={resource.id} className="space-y-2">
+                    <ResourceCard resource={resource} />
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => handleRemove(resource.id)}
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-mute hover:text-ochre transition-colors"
+                      >
+                        <X size={14} /> {t('lists.removeFromList')}
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}

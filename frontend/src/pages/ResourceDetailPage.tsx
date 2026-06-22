@@ -18,7 +18,9 @@ import { AddToListDropdown } from '@/components/AddToListDropdown'
 import { Skeleton } from '@/components/Skeleton'
 import { useResource, useResources } from '@/hooks/useResources'
 import { formatAuthors, formatNumber } from '@/utils/format'
-import type { ResourceType } from '@/types'
+import { api } from '@/lib/api'
+import { env } from '@/lib/env'
+import type { Resource, ResourceType } from '@/types'
 
 const typeLabelKeys: Record<ResourceType, 'type.paper' | 'type.dataset' | 'type.book' | 'type.tutorial'> = {
   paper: 'type.paper',
@@ -57,8 +59,12 @@ export function ResourceDetailPage() {
   const { resource, loading, error } = useResource(id)
   const { resources: relatedCandidates } = useResources({
     filters: { limit: 50 },
-    enabled: Boolean(resource),
+    enabled: Boolean(resource) && env.apiMode !== 'remote',
   })
+
+  const [relatedRemote, setRelatedRemote] = useState<Resource[]>([])
+  const [relatedLoading, setRelatedLoading] = useState(false)
+  const [relatedError, setRelatedError] = useState<string | null>(null)
 
   // 记录阅读历史
   useEffect(() => {
@@ -74,12 +80,36 @@ export function ResourceDetailPage() {
     }
   }, [id, resource, addVisit])
 
+  // 远程模式：从后端获取相关推荐
+  useEffect(() => {
+    if (!resource || !id || env.apiMode !== 'remote') return
+    let cancelled = false
+    setRelatedLoading(true)
+    setRelatedError(null)
+    api.getRelatedResources(id)
+      .then((result) => {
+        if (!cancelled) setRelatedRemote(result.data)
+      })
+      .catch((err) => {
+        if (!cancelled) setRelatedError(err instanceof Error ? err.message : t('detail.related.error'))
+      })
+      .finally(() => {
+        if (!cancelled) setRelatedLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [id, resource, t])
+
   const { related, citeFormats } = useMemo(() => {
     if (!resource) return { related: [], citeFormats: [] }
 
-    const rel = relatedCandidates
-      .filter((r) => r.id !== resource.id && (r.discipline === resource.discipline || r.tags.some((tag) => resource.tags.includes(tag))))
-      .slice(0, 3)
+    const rel =
+      env.apiMode === 'remote'
+        ? relatedRemote
+        : relatedCandidates
+            .filter((r) => r.id !== resource.id && (r.discipline === resource.discipline || r.tags.some((tag) => resource.tags.includes(tag))))
+            .slice(0, 3)
 
     const formats = [
       { kind: 'apa' as const, text: resource.citation.apa },
@@ -89,7 +119,7 @@ export function ResourceDetailPage() {
     ]
 
     return { related: rel, citeFormats: formats }
-  }, [resource, relatedCandidates])
+  }, [resource, relatedCandidates, relatedRemote])
 
   if (loading) {
     return (
@@ -374,23 +404,33 @@ export function ResourceDetailPage() {
       </section>
 
       {/* 相关资源 */}
-      {related.length > 0 && (
-        <section className="mt-24">
-          <div className="flex items-center justify-between mb-6 border-b border-rule pb-3">
-            <h2 className="font-display text-2xl text-ink">
-              {t('detail.related.title')}
-            </h2>
-            <span className="text-mono text-[12px] uppercase tracking-wider2 text-ink-mute">
-              {related.length} resources
-            </span>
+      <section className="mt-24">
+        <div className="flex items-center justify-between mb-6 border-b border-rule pb-3">
+          <h2 className="font-display text-2xl text-ink">
+            {t('detail.related.title')}
+          </h2>
+          <span className="text-mono text-[12px] uppercase tracking-wider2 text-ink-mute">
+            {relatedLoading ? '...' : `${related.length} resources`}
+          </span>
+        </div>
+        {relatedLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-40 w-full" />
           </div>
+        ) : relatedError ? (
+          <div className="bg-rule/20 border-l-4 border-ochre p-5 rounded-[2px]">
+            <p className="text-ink-soft">{relatedError}</p>
+          </div>
+        ) : related.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {related.map((r) => (
               <ResourceCard key={r.id} resource={r} />
             ))}
           </div>
-        </section>
-      )}
+        ) : null}
+      </section>
     </div>
   )
 }

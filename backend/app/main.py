@@ -8,6 +8,7 @@ from app.api.auth import router as auth_router
 from app.api.disciplines import router as disciplines_router
 from app.api.favorites import router as favorites_router
 from app.api.history import router as history_router
+from app.api.reading_lists import router as reading_lists_router
 from app.api.resources import router as resources_router
 from app.api.submissions import router as submissions_router
 from app.api.users import router as users_router
@@ -87,6 +88,7 @@ app.include_router(resources_router, prefix="/api")
 app.include_router(disciplines_router, prefix="/api")
 app.include_router(favorites_router, prefix="/api")
 app.include_router(history_router, prefix="/api")
+app.include_router(reading_lists_router, prefix="/api")
 app.include_router(submissions_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
 

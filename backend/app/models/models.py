@@ -27,6 +27,9 @@ class User(Base):
     reading_history: Mapped[list["ReadingHistory"]] = relationship(
         "ReadingHistory", back_populates="user", cascade="all, delete-orphan"
     )
+    reading_lists: Mapped[list["ReadingList"]] = relationship(
+        "ReadingList", back_populates="user", cascade="all, delete-orphan"
+    )
     submissions: Mapped[list["ResourceSubmission"]] = relationship(
         "ResourceSubmission",
         back_populates="user",
@@ -159,3 +162,54 @@ class ResourceSubmission(Base):
     reviewer: Mapped["User | None"] = relationship(
         "User", foreign_keys="ResourceSubmission.reviewed_by_id"
     )
+
+
+class ReadingList(Base):
+    __tablename__ = "reading_lists"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(255))
+    description: Mapped[str | None] = mapped_column(Text)
+    is_public: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    user: Mapped["User"] = relationship("User", back_populates="reading_lists")
+    items: Mapped[list["ReadingListItem"]] = relationship(
+        "ReadingListItem", back_populates="reading_list", cascade="all, delete-orphan"
+    )
+
+
+class ReadingListItem(Base):
+    __tablename__ = "reading_list_items"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "reading_list_id", "resource_id", name="uix_reading_list_resource"
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    reading_list_id: Mapped[int] = mapped_column(
+        ForeignKey("reading_lists.id", ondelete="CASCADE"), index=True
+    )
+    resource_id: Mapped[str] = mapped_column(
+        ForeignKey("resources.id", ondelete="CASCADE"), index=True
+    )
+    added_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+    reading_list: Mapped["ReadingList"] = relationship(
+        "ReadingList", back_populates="items"
+    )
+    resource: Mapped["Resource"] = relationship("Resource")

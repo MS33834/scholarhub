@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ListPlus, Plus } from 'lucide-react'
-import { useReadingLists } from '@/store/readingLists'
+import { useReadingLists } from '@/hooks/useReadingLists'
 import { useUI } from '@/store'
 import { useT } from '@/i18n/useLang'
 
@@ -30,15 +30,19 @@ export function AddToListDropdown({ resourceId, variant = 'icon' }: AddToListDro
 
   const allLists = getAllLists()
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!selectedListId) return
     const list = lists.find((l) => l.id === selectedListId)
     if (!list) return
     if (list.resourceIds.includes(resourceId)) {
       showToast(t('lists.alreadyInList'))
     } else {
-      addToList(selectedListId, resourceId)
-      showToast(t('lists.added'))
+      try {
+        await addToList(selectedListId, resourceId)
+        showToast(t('lists.added'))
+      } catch {
+        // Error state is handled inside the hook.
+      }
     }
     setOpen(false)
     setSelectedListId('')

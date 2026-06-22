@@ -10,6 +10,8 @@ export interface PaginatedResponse<T> {
   }
 }
 
+export type RelatedResourcesResponse = PaginatedResponse<Resource>
+
 export interface ResourceFilters {
   ids?: string[]
   type?: ResourceType
@@ -79,6 +81,33 @@ export interface HistoryEntry {
 
 export interface HistoryCreateResponse {
   message: string
+}
+
+export interface ReadingListItem {
+  resourceId: string
+  addedAt?: string
+}
+
+export interface ReadingList {
+  id: string
+  name: string
+  description?: string
+  isPublic: boolean
+  createdAt: string
+  updatedAt: string
+  items: ReadingListItem[]
+}
+
+export interface ReadingListCreate {
+  name: string
+  description?: string
+  isPublic?: boolean
+}
+
+export interface ReadingListUpdate {
+  name?: string
+  description?: string
+  isPublic?: boolean
 }
 
 export type SubmissionStatus = 'pending' | 'approved' | 'rejected'

@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy import String, func, or_, select
+from sqlalchemy import String, Text, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_admin
@@ -28,12 +28,45 @@ DEFAULT_SORT = "added_at"
 RELATED_MAX_LIMIT = 10
 
 
-def _apply_sort(query, sort: str | None, order: str | None):
-    """Apply ordering to keep pagination deterministic."""
+def _apply_sort(
+    query,
+    sort: str | None,
+    order: str | None,
+    relevance_column=None,
+    relevance_available: bool = False,
+):
+    """Apply ordering to keep pagination deterministic.
+
+    When ``relevance_available`` is True and the caller either explicitly
+    requests ``sort=relevance`` or leaves ``sort`` unspecified during a
+    search, results are ordered by the provided relevance expression.
+    """
+    sort_by_relevance = (sort == "relevance" or sort is None) and relevance_available
+    if sort_by_relevance and relevance_column is not None:
+        if order == "asc":
+            return query.order_by(relevance_column.asc(), Resource.id.asc())
+        return query.order_by(relevance_column.desc(), Resource.id.asc())
     sort_column = getattr(Resource, sort or DEFAULT_SORT, Resource.added_at)
     if order == "desc":
         return query.order_by(sort_column.desc(), Resource.id.asc())
     return query.order_by(sort_column.asc(), Resource.id.asc())
+
+
+def _is_postgresql(db: AsyncSession) -> bool:
+    return db.bind is not None and db.bind.dialect.name == "postgresql"
+
+
+def _search_vector():
+    """Return a PostgreSQL tsvector covering title, abstract and tags."""
+    return func.to_tsvector(
+        "english",
+        func.concat_ws(
+            " ",
+            func.coalesce(Resource.title, ""),
+            func.coalesce(Resource.abstract, ""),
+            func.coalesce(func.cast(Resource.tags, Text), ""),
+        ),
+    )
 
 
 def _author_set(resource: Resource) -> set[str]:
@@ -59,32 +92,71 @@ async def list_resources(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
     limit: int | None = Query(default=None, ge=1, le=MAX_PAGE_SIZE),
-    sort: str | None = Query(default=None, pattern=r"^(year|title|citations|added_at)$"),
+    sort: str | None = Query(default=None, pattern=r"^(year|title|citations|added_at|relevance)$"),
     order: str | None = Query(default=None, pattern=r"^(asc|desc)$"),
     db: AsyncSession = Depends(get_db),
 ):
     query = select(Resource)
 
+    filters = []
     if ids:
-        query = query.where(Resource.id.in_(ids))
+        filters.append(Resource.id.in_(ids))
     if type:
-        query = query.where(Resource.type == type)
+        filters.append(Resource.type == type)
     if discipline:
-        query = query.where(Resource.discipline == discipline)
+        filters.append(Resource.discipline == discipline)
     if year:
-        query = query.where(Resource.year == year)
+        filters.append(Resource.year == year)
+
+    rank = None
+    relevance_available = False
+    search_filter = None
     if q:
-        search = f"%{q}%"
-        query = query.where(
-            Resource.title.ilike(search)
-            | Resource.abstract.ilike(search)
-            | Resource.tags.cast(String).ilike(search)
-        )
+        if _is_postgresql(db):
+            tsv = _search_vector()
+            tsq = func.plainto_tsquery("english", q)
+            rank = func.ts_rank_cd(tsv, tsq).label("rank")
+            search_filter = tsv.op("@@")(tsq)
+            query = query.add_columns(rank)
+            relevance_available = True
+        else:
+            search = f"%{q}%"
+            search_filter = (
+                Resource.title.ilike(search)
+                | Resource.abstract.ilike(search)
+                | Resource.tags.cast(String).ilike(search)
+            )
+
+    if filters or search_filter is not None:
+        all_filters = filters.copy()
+        if search_filter is not None:
+            all_filters.append(search_filter)
+        query = query.where(*all_filters)
 
     count_result = await db.execute(select(func.count()).select_from(query.subquery()))
     total = count_result.scalar() or 0
 
-    query = _apply_sort(query, sort, order)
+    # Demo or sparse data may not match PostgreSQL stemming; fall back to ILIKE.
+    if q and _is_postgresql(db) and total == 0:
+        search = f"%{q}%"
+        search_filter = (
+            Resource.title.ilike(search)
+            | Resource.abstract.ilike(search)
+            | Resource.tags.cast(String).ilike(search)
+        )
+        query = select(Resource).where(*filters, search_filter)
+        count_result = await db.execute(select(func.count()).select_from(query.subquery()))
+        total = count_result.scalar() or 0
+        rank = None
+        relevance_available = False
+
+    query = _apply_sort(
+        query,
+        sort,
+        order,
+        relevance_column=rank,
+        relevance_available=relevance_available,
+    )
 
     # When `limit` is provided and the caller did not override pagination,
     # return the first N items as a single page.

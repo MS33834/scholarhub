@@ -9,8 +9,12 @@ import {
   type HistoryEntry,
   type LoginCredentials,
   type PaginatedResponse,
+  type ReadingList,
+  type ReadingListCreate,
+  type ReadingListUpdate,
   type RefreshTokenRequest,
   type RegisterCredentials,
+  type RelatedResourcesResponse,
   type ResourceFilters,
   type ResourceStats,
   type ResourceSubmission,
@@ -89,6 +93,24 @@ class Api {
     return resource
   }
 
+  async getRelatedResources(resourceId: string, limit?: number): Promise<RelatedResourcesResponse> {
+    if (isRemote) return remoteApi.getRelatedResources(resourceId, limit)
+    const all = await local.listResources({ limit: 50 })
+    const current = await local.getResourceById(resourceId)
+    if (!current) throw new Error('Resource not found')
+    const data = all.data
+      .filter(
+        (r) =>
+          r.id !== current.id &&
+          (r.discipline === current.discipline || r.tags.some((tag) => current.tags.includes(tag))),
+      )
+      .slice(0, limit ?? 3)
+    return {
+      data,
+      meta: { total: data.length, page: 1, pageSize: data.length, totalPages: 1 },
+    }
+  }
+
   async createResource(resource: Partial<Resource>): Promise<Resource> {
     if (!isRemote) throw new Error('Creating resources requires a remote backend')
     return remoteApi.createResource(resource)
@@ -157,6 +179,42 @@ class Api {
     return remoteApi.removeFromHistory(resourceId)
   }
 
+  // Reading lists (remote only; local mode falls back to localStorage store)
+  async getReadingLists(): Promise<ReadingList[]> {
+    if (!isRemote) throw new Error('Cloud reading lists require a remote backend')
+    return remoteApi.getReadingLists()
+  }
+
+  async createReadingList(data: ReadingListCreate): Promise<ReadingList> {
+    if (!isRemote) throw new Error('Cloud reading lists require a remote backend')
+    return remoteApi.createReadingList(data)
+  }
+
+  async getReadingList(id: string): Promise<ReadingList> {
+    if (!isRemote) throw new Error('Cloud reading lists require a remote backend')
+    return remoteApi.getReadingList(id)
+  }
+
+  async updateReadingList(id: string, data: ReadingListUpdate): Promise<ReadingList> {
+    if (!isRemote) throw new Error('Cloud reading lists require a remote backend')
+    return remoteApi.updateReadingList(id, data)
+  }
+
+  async deleteReadingList(id: string): Promise<void> {
+    if (!isRemote) throw new Error('Cloud reading lists require a remote backend')
+    return remoteApi.deleteReadingList(id)
+  }
+
+  async addReadingListItem(listId: string, resourceId: string): Promise<ReadingList> {
+    if (!isRemote) throw new Error('Cloud reading lists require a remote backend')
+    return remoteApi.addReadingListItem(listId, resourceId)
+  }
+
+  async removeReadingListItem(listId: string, resourceId: string): Promise<ReadingList> {
+    if (!isRemote) throw new Error('Cloud reading lists require a remote backend')
+    return remoteApi.removeReadingListItem(listId, resourceId)
+  }
+
   // Resource submissions (remote only)
   async createSubmission(submission: ResourceSubmissionCreate): Promise<ResourceSubmission> {
     if (!isRemote) throw new Error('Resource submissions require a remote backend')
@@ -193,8 +251,12 @@ export type {
   HistoryEntry,
   LoginCredentials,
   PaginatedResponse,
+  ReadingList,
+  ReadingListCreate,
+  ReadingListUpdate,
   RefreshTokenRequest,
   RegisterCredentials,
+  RelatedResourcesResponse,
   ResourceFilters,
   ResourceStats,
   ResourceSubmission,

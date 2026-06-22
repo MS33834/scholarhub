@@ -251,3 +251,64 @@ class ResourceSubmissionResponse(CamelBaseModel):
 class ResourceSubmissionListResponse(CamelBaseModel):
     data: list[ResourceSubmissionResponse]
     meta: PaginationMeta
+
+
+class ReadingListCreate(CamelBaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    description: str | None = Field(None, max_length=2000)
+    is_public: bool = False
+
+
+class ReadingListUpdate(CamelBaseModel):
+    name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = Field(None, max_length=2000)
+    is_public: bool | None = None
+
+
+class ReadingListItemCreate(CamelBaseModel):
+    resource_id: str = Field(..., min_length=1, max_length=100)
+
+
+class ReadingListResponse(CamelBaseModel):
+    model_config = ConfigDict(
+        from_attributes=True, populate_by_name=True, alias_generator=_to_camel
+    )
+
+    id: int
+    name: str
+    description: str | None
+    is_public: bool
+    item_count: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+
+class ReadingListItemResponse(CamelBaseModel):
+    model_config = ConfigDict(
+        from_attributes=True, populate_by_name=True, alias_generator=_to_camel
+    )
+
+    resource: ResourceResponse
+    added_at: datetime
+
+
+class ReadingListDetailResponse(CamelBaseModel):
+    model_config = ConfigDict(
+        from_attributes=True, populate_by_name=True, alias_generator=_to_camel
+    )
+
+    id: int
+    name: str
+    description: str | None
+    is_public: bool
+    created_at: datetime
+    updated_at: datetime
+    items: list[ReadingListItemResponse]
+
+
+class ReadingListListResponse(CamelBaseModel):
+    data: list[ReadingListResponse]
+
+
+class ReadingListAddItemResponse(CamelBaseModel):
+    message: str

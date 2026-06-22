@@ -322,3 +322,77 @@ async def test_get_related_resources_limit(client, admin_user):
     assert response.status_code == 200
     data = response.json()["data"]
     assert len(data) == 1
+
+
+@pytest.mark.asyncio
+async def test_search_resources_empty(client, admin_user, sample_resource_payload):
+    await client.post(
+        "/api/resources/",
+        json=sample_resource_payload,
+        headers={"Authorization": f"Bearer {admin_user['token']}"},
+    )
+
+    response = await client.get("/api/resources/?q=definitelynotfound")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["data"] == []
+    assert data["meta"]["total"] == 0
+
+
+@pytest.mark.asyncio
+async def test_search_resources_with_filters(client, admin_user):
+    paper = _resource_payload("search-filter-paper", discipline="computer-science")
+    paper["title"] = "Machine Learning Survey"
+    paper["type"] = "paper"
+    paper["year"] = 2024
+
+    book = _resource_payload("search-filter-book", discipline="computer-science")
+    book["title"] = "Machine Learning Textbook"
+    book["type"] = "book"
+    book["year"] = 2024
+
+    for payload in [paper, book]:
+        response = await client.post(
+            "/api/resources/",
+            json=payload,
+            headers={"Authorization": f"Bearer {admin_user['token']}"},
+        )
+        assert response.status_code == 201
+
+    response = await client.get(
+        "/api/resources/?q=machine&discipline=computer-science&year=2024"
+    )
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert len(data) == 2
+
+    response = await client.get("/api/resources/?q=machine&type=paper&year=2024")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert len(data) == 1
+    assert data[0]["id"] == "search-filter-paper"
+
+
+@pytest.mark.asyncio
+async def test_search_resources_relevance_ranking(client, admin_user, db_session):
+    if db_session.bind.dialect.name != "postgresql":
+        pytest.skip("Full-text relevance ranking requires PostgreSQL")
+
+    title_match = _resource_payload("title-match-paper", tags=["other"])
+    title_match["title"] = "Quantum Computing Advances"
+
+    tag_match = _resource_payload("tag-match-paper", tags=["quantum"])
+    tag_match["title"] = "Some Other Paper"
+
+    for payload in [title_match, tag_match]:
+        response = await client.post(
+            "/api/resources/",
+            json=payload,
+            headers={"Authorization": f"Bearer {admin_user['token']}"},
+        )
+        assert response.status_code == 201
+
+    response = await client.get("/api/resources/?q=quantum&sort=relevance")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert [item["id"] for item in data] == ["title-match-paper", "tag-match-paper"]
