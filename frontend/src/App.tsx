@@ -1,11 +1,12 @@
 import { BrowserRouter, HashRouter, Route, Routes, useLocation, Link } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { env } from '@/lib/env'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { Toast } from '@/components/Toast'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { MobileNav } from '@/components/MobileNav'
 import { useDocumentSettings } from '@/hooks/useDocumentSettings'
 import { useAutoDarkMode } from '@/hooks/useAutoDarkMode'
 import { useT } from '@/i18n/useLang'
@@ -56,40 +57,43 @@ function AppRoutes() {
   useDocumentSettings()
   useAutoDarkMode()
   const checkAuth = useAuth((s) => s.checkAuth)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   useEffect(() => {
     checkAuth()
   }, [checkAuth])
 
   return (
-    <ErrorBoundary>
-      <ScrollToTop />
-      <div className="min-h-screen flex flex-col" style={{ background: 'var(--paper)' }}>
-        <SiteHeader />
-        <main className="flex-1">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/resources" element={<ResourcesPage />} />
-            <Route path="/resource/:id" element={<ResourceDetailPage />} />
-            <Route path="/discipline/:slug" element={<DisciplinePage />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/favorites" element={<FavoritesPage />} />
-            <Route path="/history" element={<HistoryPage />} />
-            <Route path="/lists" element={<ListsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/admin" element={<AdminPage />} />
-            <Route path="/submit" element={<SubmitPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-        <SiteFooter />
-        <Toast />
-      </div>
-    </ErrorBoundary>
+    <MobileNav open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+      <ErrorBoundary>
+        <ScrollToTop />
+        <div className="min-h-screen flex flex-col" style={{ background: 'var(--paper)' }}>
+          <SiteHeader onOpenMobileNav={() => setMobileNavOpen(true)} />
+          <main className="flex-1">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/resources" element={<ResourcesPage />} />
+              <Route path="/resource/:id" element={<ResourceDetailPage />} />
+              <Route path="/discipline/:slug" element={<DisciplinePage />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/favorites" element={<FavoritesPage />} />
+              <Route path="/history" element={<HistoryPage />} />
+              <Route path="/lists" element={<ListsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/admin" element={<AdminPage />} />
+              <Route path="/submit" element={<SubmitPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+          <SiteFooter />
+          <Toast />
+        </div>
+      </ErrorBoundary>
+    </MobileNav>
   )
 }
 

@@ -34,7 +34,7 @@ services:
       db:
         condition: service_healthy
     command: >
-      sh -c "cd /app && python -m app.db.init && python -m scripts.seed_resources && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+      sh -c "cd /app && python -m app.db.init && uvicorn app.main:app --host 0.0.0.0 --port 8000"
 
   frontend:
     build:

@@ -37,8 +37,9 @@ async def test_create_and_list_my_submissions(client, test_user, sample_submissi
     data = response.json()
     assert data["title"] == sample_submission_payload["title"]
     assert data["status"] == "pending"
-    assert data["userId"] == test_user["user_id"]
-    assert data["username"] == test_user["username"]
+    assert data["submittedBy"]["id"] == test_user["user_id"]
+    assert data["submittedBy"]["username"] == test_user["username"]
+    assert data["submittedAt"] is not None
 
     response = await client.get(
         "/api/submissions/me",
@@ -98,6 +99,8 @@ async def test_admin_approve_creates_resource(
     data = response.json()
     assert data["status"] == "approved"
     assert data["resourceId"] is not None
+    assert data["reviewedBy"]["id"] == admin_user["user_id"]
+    assert data["reviewedAt"] is not None
 
     resource_id = data["resourceId"]
     response = await client.get(f"/api/resources/{resource_id}")
@@ -129,3 +132,50 @@ async def test_admin_reject_with_note(
     assert data["status"] == "rejected"
     assert data["adminNote"] == "Not suitable for the catalog"
     assert data["resourceId"] is None
+    assert data["reviewedBy"]["id"] == admin_user["user_id"]
+    assert data["reviewedAt"] is not None
+
+
+@pytest.mark.asyncio
+async def test_list_pending_submissions_and_review_endpoint(
+    client, test_user, admin_user, sample_submission_payload
+):
+    response = await client.post(
+        "/api/submissions/",
+        json=sample_submission_payload,
+        headers={"Authorization": f"Bearer {test_user['token']}"},
+    )
+    assert response.status_code == 201
+    submission_id = response.json()["id"]
+
+    response = await client.get(
+        "/api/submissions/pending",
+        headers={"Authorization": f"Bearer {admin_user['token']}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["data"]) >= 1
+    assert all(s["status"] == "pending" for s in data["data"])
+
+    response = await client.patch(
+        f"/api/submissions/{submission_id}/review",
+        json={"status": "approved"},
+        headers={"Authorization": f"Bearer {admin_user['token']}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "approved"
+
+
+@pytest.mark.asyncio
+async def test_submission_venue_nullable(
+    client, test_user, sample_submission_payload
+):
+    payload = sample_submission_payload.copy()
+    payload.pop("venue")
+    response = await client.post(
+        "/api/submissions/",
+        json=payload,
+        headers={"Authorization": f"Bearer {test_user['token']}"},
+    )
+    assert response.status_code == 201
+    assert response.json()["venue"] is None

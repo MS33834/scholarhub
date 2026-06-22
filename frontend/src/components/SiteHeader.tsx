@@ -1,13 +1,19 @@
 import { NavLink, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { Search, User, LogOut, Shield, Upload } from 'lucide-react'
+import { Search, User, LogOut, Shield, Upload, Menu } from 'lucide-react'
 import { useUI } from '@/store'
 import { useT } from '@/i18n/useLang'
 import { useAuth } from '@/store/authStore'
+import { useMobile } from '@/hooks/useMobile'
 
-export function SiteHeader() {
+interface SiteHeaderProps {
+  onOpenMobileNav?: () => void
+}
+
+export function SiteHeader({ onOpenMobileNav }: SiteHeaderProps) {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const isMobile = useMobile()
   const showToast = useUI((s) => s.showToast)
   const { t, lang, toggleLang } = useT()
   const { user, isAuthenticated, logout } = useAuth()
@@ -69,6 +75,17 @@ export function SiteHeader() {
           </Link>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            {isMobile && onOpenMobileNav && (
+              <button
+                onClick={onOpenMobileNav}
+                className="p-2 text-ink-soft hover:text-moss transition-colors"
+                aria-label={t('nav.menu')}
+                title={t('nav.menu')}
+              >
+                <Menu size={22} />
+              </button>
+            )}
+
             <form
               onSubmit={onSubmit}
               className="hidden sm:flex items-center gap-2 border border-rule rounded-[2px] px-3 py-1.5 bg-paper focus-within:border-moss transition-colors"

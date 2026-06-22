@@ -30,8 +30,8 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: infra/Dockerfile.backend
     container_name: scholarhub-backend
     restart: unless-stopped
     environment:
@@ -58,8 +58,8 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
+      context: ..
+      dockerfile: infra/Dockerfile.frontend
       args:
         # Build-time defaults are kept for static/GitHub Pages builds.
         VITE_API_URL: /api

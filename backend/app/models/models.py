@@ -28,7 +28,10 @@ class User(Base):
         "ReadingHistory", back_populates="user", cascade="all, delete-orphan"
     )
     submissions: Mapped[list["ResourceSubmission"]] = relationship(
-        "ResourceSubmission", back_populates="user", cascade="all, delete-orphan"
+        "ResourceSubmission",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="ResourceSubmission.user_id",
     )
 
 
@@ -40,7 +43,7 @@ class Resource(Base):
     title: Mapped[str] = mapped_column(Text)
     authors: Mapped[list] = mapped_column(JSON)
     year: Mapped[int] = mapped_column(Integer, index=True)
-    venue: Mapped[str] = mapped_column(Text)
+    venue: Mapped[str | None] = mapped_column(Text)
     discipline: Mapped[str] = mapped_column(String(100), index=True)
     subdiscipline: Mapped[str | None] = mapped_column(String(100))
     tags: Mapped[list] = mapped_column(JSON)
@@ -136,6 +139,10 @@ class ResourceSubmission(Base):
     resource_id: Mapped[str | None] = mapped_column(
         ForeignKey("resources.id", ondelete="SET NULL")
     )
+    reviewed_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -145,5 +152,10 @@ class ResourceSubmission(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    user: Mapped["User"] = relationship("User", back_populates="submissions")
+    user: Mapped["User"] = relationship(
+        "User", back_populates="submissions", foreign_keys="ResourceSubmission.user_id"
+    )
     resource: Mapped["Resource"] = relationship("Resource", back_populates="submissions")
+    reviewer: Mapped["User | None"] = relationship(
+        "User", foreign_keys="ResourceSubmission.reviewed_by_id"
+    )

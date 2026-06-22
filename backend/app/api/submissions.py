@@ -20,6 +20,7 @@ from app.schemas import (
     ResourceSubmissionListResponse,
     ResourceSubmissionResponse,
     ResourceSubmissionReview,
+    UserBrief,
 )
 
 router = APIRouter(prefix="/submissions", tags=["submissions"])
@@ -68,7 +69,7 @@ async def _create_resource_from_submission(
         title=submission.title,
         authors=submission.authors,
         year=submission.year,
-        venue=submission.venue or "",
+        venue=submission.venue,
         discipline=submission.discipline,
         subdiscipline=submission.subdiscipline,
         tags=submission.tags,
@@ -85,13 +86,15 @@ async def _create_resource_from_submission(
     return resource_id
 
 
-def _submission_to_response(
-    submission: ResourceSubmission, username: str
-) -> ResourceSubmissionResponse:
+def _user_brief(user: User | None) -> UserBrief | None:
+    if user is None:
+        return None
+    return UserBrief(id=user.id, username=user.username)
+
+
+def _submission_to_response(submission: ResourceSubmission) -> ResourceSubmissionResponse:
     return ResourceSubmissionResponse(
-        id=submission.id,
-        user_id=submission.user_id,
-        username=username,
+        id=str(submission.id),
         title=submission.title,
         type=submission.type,
         authors=submission.authors,
@@ -107,8 +110,10 @@ def _submission_to_response(
         status=submission.status,
         admin_note=submission.admin_note,
         resource_id=submission.resource_id,
-        created_at=submission.created_at,
-        updated_at=submission.updated_at,
+        submitted_by=_user_brief(submission.user),
+        submitted_at=submission.created_at,
+        reviewed_by=_user_brief(submission.reviewer),
+        reviewed_at=submission.reviewed_at,
     )
 
 
@@ -117,7 +122,6 @@ async def _paginate_submissions(
     query,
     page: int,
     page_size: int,
-    username_map: dict[int, str] | None = None,
 ) -> ResourceSubmissionListResponse:
     count_result = await db.execute(select(func.count()).select_from(query.subquery()))
     total = count_result.scalar() or 0
@@ -132,12 +136,7 @@ async def _paginate_submissions(
     total_pages = (total + page_size - 1) // page_size if total > 0 else 0
 
     return ResourceSubmissionListResponse(
-        data=[
-            _submission_to_response(
-                s, username_map.get(s.user_id, "") if username_map else ""
-            )
-            for s in submissions
-        ],
+        data=[_submission_to_response(s) for s in submissions],
         meta=PaginationMeta(
             total=total,
             page=page,
@@ -163,7 +162,8 @@ async def create_submission(
     db.add(submission)
     await db.commit()
     await db.refresh(submission)
-    return _submission_to_response(submission, current_user.username)
+    submission.user = current_user
+    return _submission_to_response(submission)
 
 
 @router.get("/me", response_model=ResourceSubmissionListResponse)
@@ -178,12 +178,15 @@ async def list_my_submissions(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    query = select(ResourceSubmission).where(ResourceSubmission.user_id == current_user.id)
+    query = (
+        select(ResourceSubmission)
+        .where(ResourceSubmission.user_id == current_user.id)
+        .options(selectinload(ResourceSubmission.user))
+    )
     if status_value:
         query = query.where(ResourceSubmission.status == status_value)
 
-    username_map = {current_user.id: current_user.username}
-    return await _paginate_submissions(db, query, page, page_size, username_map)
+    return await _paginate_submissions(db, query, page, page_size)
 
 
 @router.get("/", response_model=ResourceSubmissionListResponse)
@@ -198,14 +201,30 @@ async def list_submissions(
     current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    query = select(ResourceSubmission).options(selectinload(ResourceSubmission.user))
+    query = select(ResourceSubmission).options(
+        selectinload(ResourceSubmission.user),
+        selectinload(ResourceSubmission.reviewer),
+    )
     if status_value:
         query = query.where(ResourceSubmission.status == status_value)
 
-    result = await db.execute(select(User.id, User.username))
-    username_map = {row[0]: row[1] for row in result.all()}
+    return await _paginate_submissions(db, query, page, page_size)
 
-    return await _paginate_submissions(db, query, page, page_size, username_map)
+
+@router.get("/pending", response_model=ResourceSubmissionListResponse)
+@rate_limit(f"{settings.rate_limit_per_minute}/minute")
+async def list_pending_submissions(
+    request: Request,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    query = select(ResourceSubmission).where(ResourceSubmission.status == "pending").options(
+        selectinload(ResourceSubmission.user),
+        selectinload(ResourceSubmission.reviewer),
+    )
+    return await _paginate_submissions(db, query, page, page_size)
 
 
 @router.get("/{submission_id}", response_model=ResourceSubmissionResponse)
@@ -218,7 +237,11 @@ async def get_submission(
 ):
     result = await db.execute(
         select(ResourceSubmission)
-        .options(selectinload(ResourceSubmission.user), selectinload(ResourceSubmission.resource))
+        .options(
+            selectinload(ResourceSubmission.user),
+            selectinload(ResourceSubmission.reviewer),
+            selectinload(ResourceSubmission.resource),
+        )
         .where(ResourceSubmission.id == submission_id)
     )
     submission = result.scalar_one_or_none()
@@ -228,11 +251,11 @@ async def get_submission(
     if not current_user.is_admin and submission.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
-    username = submission.user.username if submission.user else ""
-    return _submission_to_response(submission, username)
+    return _submission_to_response(submission)
 
 
 @router.patch("/{submission_id}", response_model=ResourceSubmissionResponse)
+@router.patch("/{submission_id}/review", response_model=ResourceSubmissionResponse)
 @rate_limit("30/minute")
 async def review_submission(
     request: Request,
@@ -243,14 +266,22 @@ async def review_submission(
 ):
     result = await db.execute(
         select(ResourceSubmission)
-        .options(selectinload(ResourceSubmission.user))
+        .options(selectinload(ResourceSubmission.user), selectinload(ResourceSubmission.reviewer))
         .where(ResourceSubmission.id == submission_id)
     )
     submission = result.scalar_one_or_none()
     if submission is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found")
 
+    if submission.status != "pending":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Submission has already been reviewed",
+        )
+
     updates = body.model_dump(exclude_unset=True)
+    updates["reviewed_by_id"] = current_user.id
+    updates["reviewed_at"] = datetime.now(timezone.utc)
 
     if updates.get("status") == "approved":
         resource_id = updates.get("resource_id") or submission.resource_id
@@ -271,5 +302,5 @@ async def review_submission(
     await db.commit()
     await db.refresh(submission)
 
-    username = submission.user.username if submission.user else ""
-    return _submission_to_response(submission, username)
+    submission.reviewer = current_user
+    return _submission_to_response(submission)

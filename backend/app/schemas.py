@@ -44,6 +44,15 @@ class UserResponse(UserBase):
     is_admin: bool
 
 
+class UserBrief(CamelBaseModel):
+    model_config = ConfigDict(
+        from_attributes=True, populate_by_name=True, alias_generator=_to_camel
+    )
+
+    id: int
+    username: str
+
+
 class UserLogin(CamelBaseModel):
     username: str
     password: str
@@ -202,9 +211,7 @@ class ResourceSubmissionResponse(CamelBaseModel):
         from_attributes=True, populate_by_name=True, alias_generator=_to_camel
     )
 
-    id: int
-    user_id: int
-    username: str
+    id: str
     title: str
     type: str
     authors: list[str]
@@ -220,8 +227,10 @@ class ResourceSubmissionResponse(CamelBaseModel):
     status: str
     admin_note: str | None
     resource_id: str | None
-    created_at: datetime
-    updated_at: datetime
+    submitted_by: UserBrief
+    submitted_at: datetime
+    reviewed_by: UserBrief | None
+    reviewed_at: datetime | None
 
 
 class ResourceSubmissionListResponse(CamelBaseModel):

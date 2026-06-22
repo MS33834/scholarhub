@@ -6,11 +6,21 @@ import { useT } from '@/i18n/useLang'
 
 interface MobileNavProps {
   children?: ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function MobileNav({ children }: MobileNavProps) {
+export function MobileNav({ children, open, onOpenChange }: MobileNavProps) {
   const isMobile = useMobile()
-  const [isOpen, setIsOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isControlled = open !== undefined
+  const isOpen = isControlled ? open : internalOpen
+  const setIsOpen = (value: boolean) => {
+    if (!isControlled) {
+      setInternalOpen(value)
+    }
+    onOpenChange?.(value)
+  }
   const { t } = useT()
   const location = useLocation()
 
@@ -30,13 +40,15 @@ export function MobileNav({ children }: MobileNavProps) {
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed top-4 left-4 z-50 p-2 bg-paper border border-rule rounded-[2px] hover:border-ink transition-colors"
-        aria-label={t('nav.menu')}
-      >
-        <Menu size={22} className="text-ink" />
-      </button>
+      {!isControlled && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed top-4 left-4 z-50 p-2 bg-paper border border-rule rounded-[2px] hover:border-ink transition-colors"
+          aria-label={t('nav.menu')}
+        >
+          <Menu size={22} className="text-ink" />
+        </button>
+      )}
 
       {isOpen && (
         <div
