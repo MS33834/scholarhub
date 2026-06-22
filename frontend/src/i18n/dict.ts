@@ -15,6 +15,7 @@ export type Dict = {
   'nav.lists': string
   'nav.settings': string
   'nav.about': string
+  'nav.submit': string
   'nav.menu': string
   'nav.close': string
   'search.placeholder': string
@@ -202,6 +203,18 @@ export type Dict = {
   'lists.title': string
   'lists.subtitle': string
   'lists.create': string
+  'lists.empty.title': string
+  'lists.empty.body': string
+  'lists.delete': string
+  'lists.confirm.delete': string
+  'lists.addTo': string
+  'lists.removeFrom': string
+  'lists.items': string              // accepts {count}
+  'lists.name': string
+  'lists.namePlaceholder': string
+  'lists.description': string
+  'lists.descriptionPlaceholder': string
+  'lists.noResources': string
 
   // ── Authentication ──────────────────────────────────────────
   'auth.login.title': string
@@ -227,6 +240,25 @@ export type Dict = {
   'profile.user': string
   'profile.adminPanel': string
   'profile.logout': string
+
+  // ── Submit resource ─────────────────────────────────────────
+  'submit.title': string
+  'submit.subtitle': string
+  'submit.form.title': string
+  'submit.form.type': string
+  'submit.form.authors': string
+  'submit.form.tags': string
+  'submit.form.year': string
+  'submit.form.venue': string
+  'submit.form.discipline': string
+  'submit.form.subdiscipline': string
+  'submit.form.abstract': string
+  'submit.form.doi': string
+  'submit.form.downloadUrl': string
+  'submit.form.externalUrl': string
+  'submit.submit': string
+  'submit.success': string
+  'submit.loginRequired': string
 
   // ── Admin ───────────────────────────────────────────────────
   'admin.title': string
@@ -263,18 +295,16 @@ export type Dict = {
   'admin.actions': string
   'admin.deleteResource': string
   'admin.confirmDelete': string
-  'lists.empty.title': string
-  'lists.empty.body': string
-  'lists.delete': string
-  'lists.confirm.delete': string
-  'lists.addTo': string
-  'lists.removeFrom': string
-  'lists.items': string              // accepts {count}
-  'lists.name': string
-  'lists.namePlaceholder': string
-  'lists.description': string
-  'lists.descriptionPlaceholder': string
-  'lists.noResources': string
+
+  // ── Admin submissions ───────────────────────────────────────
+  'admin.submissions.title': string
+  'admin.submissions.pending': string
+  'admin.submissions.approved': string
+  'admin.submissions.rejected': string
+  'admin.submissions.approve': string
+  'admin.submissions.reject': string
+  'admin.submissions.rejectNote': string
+  'admin.submissions.empty': string
 
   // ── Export ──────────────────────────────────────────────────
   'export.title': string
@@ -340,6 +370,7 @@ const en: Dict = {
   'nav.lists': 'Reading Lists',
   'nav.settings': 'Settings',
   'nav.about': 'About',
+  'nav.submit': 'Submit',
   'nav.menu': 'Menu',
   'nav.close': 'Close',
   'search.placeholder': 'Search title, author, keyword',
@@ -593,6 +624,11 @@ const en: Dict = {
   'shortcuts.search': 'Focus search',
   'shortcuts.navigateUp': 'Navigate up',
   'shortcuts.navigateDown': 'Navigate down',
+  'shortcuts.openItem': 'Open selected item',
+  'shortcuts.goHome': 'Go to home',
+  'shortcuts.goBack': 'Go back',
+  'shortcuts.toggleTheme': 'Toggle theme',
+  'shortcuts.showHelp': 'Show this help',
 
   // ── Authentication ──────────────────────────────────────────
   'auth.login.title': 'Login',
@@ -618,6 +654,25 @@ const en: Dict = {
   'profile.user': 'User',
   'profile.adminPanel': 'Admin Panel',
   'profile.logout': 'Logout',
+
+  // ── Submit resource ─────────────────────────────────────────
+  'submit.title': 'Submit a Resource',
+  'submit.subtitle': 'Contribute a paper, book, dataset, or tutorial to the catalogue.',
+  'submit.form.title': 'Title',
+  'submit.form.type': 'Type',
+  'submit.form.authors': 'Authors',
+  'submit.form.tags': 'Tags',
+  'submit.form.year': 'Year',
+  'submit.form.venue': 'Venue / Publisher',
+  'submit.form.discipline': 'Discipline',
+  'submit.form.subdiscipline': 'Subdiscipline',
+  'submit.form.abstract': 'Abstract',
+  'submit.form.doi': 'DOI',
+  'submit.form.downloadUrl': 'Download URL',
+  'submit.form.externalUrl': 'External URL',
+  'submit.submit': 'Submit resource',
+  'submit.success': 'Submission received. It will be reviewed shortly.',
+  'submit.loginRequired': 'Please log in to submit a resource.',
 
   // ── Admin ───────────────────────────────────────────────────
   'admin.title': 'Resource Management',
@@ -654,11 +709,16 @@ const en: Dict = {
   'admin.actions': 'Actions',
   'admin.deleteResource': 'Delete resource',
   'admin.confirmDelete': 'Are you sure you want to delete this resource?',
-  'shortcuts.openItem': 'Open selected item',
-  'shortcuts.goHome': 'Go to home',
-  'shortcuts.goBack': 'Go back',
-  'shortcuts.toggleTheme': 'Toggle theme',
-  'shortcuts.showHelp': 'Show this help',
+
+  // ── Admin submissions ───────────────────────────────────────
+  'admin.submissions.title': 'Review Submissions',
+  'admin.submissions.pending': 'Pending',
+  'admin.submissions.approved': 'Approved',
+  'admin.submissions.rejected': 'Rejected',
+  'admin.submissions.approve': 'Approve',
+  'admin.submissions.reject': 'Reject',
+  'admin.submissions.rejectNote': 'Admin note (optional)',
+  'admin.submissions.empty': 'No pending submissions.',
 }
 
 const zh: Dict = {
@@ -672,6 +732,7 @@ const zh: Dict = {
   'nav.lists': '阅读列表',
   'nav.settings': '设置',
   'nav.about': '关于',
+  'nav.submit': '提交资源',
   'nav.menu': '菜单',
   'nav.close': '关闭',
   'search.placeholder': '搜索标题、作者、关键词',
@@ -942,6 +1003,25 @@ const zh: Dict = {
   'profile.adminPanel': '管理面板',
   'profile.logout': '退出登录',
 
+  // ── Submit resource ─────────────────────────────────────────
+  'submit.title': '提交资源',
+  'submit.subtitle': '向目录贡献论文、教材、数据集或教程。',
+  'submit.form.title': '标题',
+  'submit.form.type': '类型',
+  'submit.form.authors': '作者',
+  'submit.form.tags': '标签',
+  'submit.form.year': '年份',
+  'submit.form.venue': '会议/期刊/出版社',
+  'submit.form.discipline': '学科',
+  'submit.form.subdiscipline': '子学科',
+  'submit.form.abstract': '摘要',
+  'submit.form.doi': 'DOI',
+  'submit.form.downloadUrl': '下载链接',
+  'submit.form.externalUrl': '外部链接',
+  'submit.submit': '提交资源',
+  'submit.success': '提交已收到，将尽快审核。',
+  'submit.loginRequired': '请登录后再提交资源。',
+
   // ── Admin ───────────────────────────────────────────────────
   'admin.title': '资源管理',
   'admin.addResource': '添加资源',
@@ -977,6 +1057,16 @@ const zh: Dict = {
   'admin.actions': '操作',
   'admin.deleteResource': '删除资源',
   'admin.confirmDelete': '确定要删除此资源吗？',
+
+  // ── Admin submissions ───────────────────────────────────────
+  'admin.submissions.title': '审核提交',
+  'admin.submissions.pending': '待审核',
+  'admin.submissions.approved': '已通过',
+  'admin.submissions.rejected': '已拒绝',
+  'admin.submissions.approve': '通过',
+  'admin.submissions.reject': '拒绝',
+  'admin.submissions.rejectNote': '管理员备注（可选）',
+  'admin.submissions.empty': '暂无待审核提交。',
 }
 
 export const dicts = { en, zh } as const

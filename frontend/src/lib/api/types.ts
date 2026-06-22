@@ -74,3 +74,58 @@ export interface HistoryEntry {
 export interface HistoryCreateResponse {
   message: string
 }
+
+export type SubmissionStatus = 'pending' | 'approved' | 'rejected'
+
+export interface ResourceSubmission {
+  id: string
+  status: SubmissionStatus
+  title: string
+  type: ResourceType
+  year: number
+  authors: string[]
+  tags: string[]
+  venue?: string
+  discipline: Discipline | string
+  subdiscipline?: string
+  abstract: string
+  doi?: string
+  downloadUrl?: string
+  externalUrl?: string
+  submittedBy: { id: number; username: string }
+  submittedAt: string
+  reviewedBy?: { id: number; username: string }
+  reviewedAt?: string
+  adminNote?: string
+  resourceId?: string
+}
+
+export interface ResourceSubmissionCreate {
+  title: string
+  type: ResourceType
+  year: number
+  authors: string[]
+  tags: string[]
+  venue?: string
+  discipline: Discipline | string
+  subdiscipline?: string
+  abstract: string
+  doi?: string
+  downloadUrl?: string
+  externalUrl?: string
+}
+
+export interface ResourceSubmissionReview {
+  status: 'approved' | 'rejected'
+  adminNote?: string
+}
+
+export interface ResourceSubmissionListResponse {
+  data: ResourceSubmission[]
+  meta: {
+    total: number
+    page: number
+    pageSize: number
+    totalPages: number
+  }
+}

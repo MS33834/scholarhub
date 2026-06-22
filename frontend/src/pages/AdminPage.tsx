@@ -3,8 +3,9 @@ import { useAuth } from '../store/authStore';
 import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n/useLang';
 import { api } from '@/lib/api';
-import { Plus, Edit, Trash2, Save, X, Trash } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Trash, ChevronDown } from 'lucide-react';
 import type { Resource, Citation } from '../types';
+import type { ResourceSubmission } from '@/lib/api';
 
 const EMPTY_CITATION: Citation = {
   apa: '',
@@ -51,6 +52,10 @@ export function AdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Resource>>(EMPTY_FORM);
 
+  const [submissions, setSubmissions] = useState<ResourceSubmission[]>([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
+  const [submissionsOpen, setSubmissionsOpen] = useState(true);
+
   const loadResources = async () => {
     try {
       const result = await api.listResources({ limit: 100 });
@@ -62,12 +67,25 @@ export function AdminPage() {
     }
   };
 
+  const loadSubmissions = async () => {
+    setSubmissionsLoading(true);
+    try {
+      const result = await api.listPendingSubmissions();
+      setSubmissions(result.data || []);
+    } catch (err) {
+      console.error('Failed to load submissions:', err);
+    } finally {
+      setSubmissionsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!user?.isAdmin) {
       navigate('/');
       return;
     }
     loadResources();
+    loadSubmissions();
   }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -116,6 +134,26 @@ export function AdminPage() {
     }
   };
 
+  const handleApprove = async (id: string) => {
+    try {
+      await api.reviewSubmission(id, { status: 'approved' });
+      loadSubmissions();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Approval failed');
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    const note = prompt(t('admin.submissions.rejectNote'));
+    if (note === null) return;
+    try {
+      await api.reviewSubmission(id, { status: 'rejected', adminNote: note });
+      loadSubmissions();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Rejection failed');
+    }
+  };
+
   if (!user?.isAdmin) return null;
 
   return (
@@ -139,6 +177,74 @@ export function AdminPage() {
           <span>{t('admin.addResource')}</span>
         </button>
       </header>
+
+      <section className="border border-rule rounded-[2px] overflow-hidden mb-10">
+        <button
+          type="button"
+          onClick={() => setSubmissionsOpen((prev) => !prev)}
+          className="w-full flex items-center justify-between gap-4 px-6 py-4 text-left hover:bg-paper/50 transition-colors"
+          aria-expanded={submissionsOpen}
+          aria-controls="submissions-panel"
+        >
+          <h2 className="font-display text-xl text-ink">{t('admin.submissions.title')}</h2>
+          <ChevronDown
+            size={20}
+            className={`text-ink-mute transition-transform ${submissionsOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+
+        {submissionsOpen && (
+          <div id="submissions-panel" className="border-t border-rule">
+            {submissionsLoading ? (
+              <div className="p-8 text-center text-ink-soft">{t('admin.loading')}</div>
+            ) : submissions.length === 0 ? (
+              <div className="p-8 text-center text-ink-soft">{t('admin.submissions.empty')}</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px]">
+                  <thead className="border-b border-rule">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('submit.form.title')}</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.authors')}</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('profile.user')}</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('submit.form.year')}</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-ink">{t('admin.submissions.pending')}</th>
+                      <th className="px-4 py-3 text-right text-sm font-medium text-ink">{t('admin.actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-rule">
+                    {submissions.map((submission) => (
+                      <tr key={submission.id} className="hover:bg-paper/50">
+                        <td className="px-4 py-3 text-sm text-ink">{submission.title}</td>
+                        <td className="px-4 py-3 text-sm text-ink-mute">{submission.authors.join(', ')}</td>
+                        <td className="px-4 py-3 text-sm text-ink-mute">{submission.submittedBy.username}</td>
+                        <td className="px-4 py-3 text-sm text-ink-mute">{submission.year}</td>
+                        <td className="px-4 py-3 text-sm text-ink-mute">
+                          {new Date(submission.submittedAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => handleApprove(submission.id)}
+                            className="text-sm px-3 py-1.5 mr-2 border border-moss rounded-[2px] text-paper bg-moss hover:bg-paper hover:text-moss transition-colors"
+                          >
+                            {t('admin.submissions.approve')}
+                          </button>
+                          <button
+                            onClick={() => handleReject(submission.id)}
+                            className="text-sm px-3 py-1.5 border border-ochre rounded-[2px] text-ochre hover:bg-ochre hover:text-paper transition-colors"
+                          >
+                            {t('admin.submissions.reject')}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
 
       {showForm && (
         <div className="border border-rule rounded-[2px] p-6 mb-10">

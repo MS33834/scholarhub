@@ -107,15 +107,12 @@ export function SiteFooter() {
                 </a>
               </li>
               <li>
-                <a
-                  className="inline-flex items-center gap-1.5 hover:text-moss transition-colors group"
-                  href="https://github.com/MS33834/scholarhub/issues"
-                  target="_blank"
-                  rel="noreferrer noopener"
+                <Link
+                  to="/submit"
+                  className="inline-flex items-center gap-1.5 hover:text-moss transition-colors"
                 >
                   {t('footer.link.submit')}
-                  <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

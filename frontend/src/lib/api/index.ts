@@ -13,6 +13,10 @@ import {
   type RegisterCredentials,
   type ResourceFilters,
   type ResourceStats,
+  type ResourceSubmission,
+  type ResourceSubmissionCreate,
+  type ResourceSubmissionListResponse,
+  type ResourceSubmissionReview,
   type User,
 } from './types'
 
@@ -135,6 +139,32 @@ class Api {
     if (!isRemote) throw new Error('Cloud history requires a remote backend')
     return remoteApi.removeFromHistory(resourceId)
   }
+
+  // Resource submissions (remote only)
+  async createSubmission(submission: ResourceSubmissionCreate): Promise<ResourceSubmission> {
+    if (!isRemote) throw new Error('Resource submissions require a remote backend')
+    return remoteApi.createSubmission(submission)
+  }
+
+  async listMySubmissions(): Promise<ResourceSubmissionListResponse> {
+    if (!isRemote) throw new Error('Resource submissions require a remote backend')
+    return remoteApi.listMySubmissions()
+  }
+
+  async listPendingSubmissions(): Promise<ResourceSubmissionListResponse> {
+    if (!isRemote) throw new Error('Resource submissions require a remote backend')
+    return remoteApi.listPendingSubmissions()
+  }
+
+  async getSubmission(id: string): Promise<ResourceSubmission> {
+    if (!isRemote) throw new Error('Resource submissions require a remote backend')
+    return remoteApi.getSubmission(id)
+  }
+
+  async reviewSubmission(id: string, review: ResourceSubmissionReview): Promise<ResourceSubmission> {
+    if (!isRemote) throw new Error('Resource submissions require a remote backend')
+    return remoteApi.reviewSubmission(id, review)
+  }
 }
 
 export const api = new Api()
@@ -150,6 +180,10 @@ export type {
   RegisterCredentials,
   ResourceFilters,
   ResourceStats,
+  ResourceSubmission,
+  ResourceSubmissionCreate,
+  ResourceSubmissionListResponse,
+  ResourceSubmissionReview,
   User,
 }
 

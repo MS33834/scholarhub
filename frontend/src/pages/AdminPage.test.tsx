@@ -12,6 +12,8 @@ vi.mock('@/lib/api', () => ({
     createResource: vi.fn(),
     updateResource: vi.fn(),
     deleteResource: vi.fn(),
+    listPendingSubmissions: vi.fn(),
+    reviewSubmission: vi.fn(),
   },
 }))
 
@@ -46,6 +48,7 @@ function setup() {
 describe('AdminPage', () => {
   beforeEach(() => {
     vi.mocked(api.listResources).mockResolvedValue({ data: mockResources, meta: { total: 1, page: 1, pageSize: 20, totalPages: 1 } })
+    vi.mocked(api.listPendingSubmissions).mockResolvedValue({ data: [], meta: { total: 0, page: 1, pageSize: 20, totalPages: 0 } })
   })
 
   it('redirects non-admin users to home', async () => {

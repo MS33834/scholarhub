@@ -27,6 +27,9 @@ class User(Base):
     reading_history: Mapped[list["ReadingHistory"]] = relationship(
         "ReadingHistory", back_populates="user", cascade="all, delete-orphan"
     )
+    submissions: Mapped[list["ResourceSubmission"]] = relationship(
+        "ResourceSubmission", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class Resource(Base):
@@ -63,6 +66,9 @@ class Resource(Base):
     )
     reading_history: Mapped[list["ReadingHistory"]] = relationship(
         "ReadingHistory", back_populates="resource", cascade="all, delete-orphan"
+    )
+    submissions: Mapped[list["ResourceSubmission"]] = relationship(
+        "ResourceSubmission", back_populates="resource"
     )
 
 
@@ -102,3 +108,42 @@ class ReadingHistory(Base):
 
     user: Mapped["User"] = relationship("User", back_populates="reading_history")
     resource: Mapped["Resource"] = relationship("Resource", back_populates="reading_history")
+
+
+class ResourceSubmission(Base):
+    __tablename__ = "resource_submissions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    title: Mapped[str] = mapped_column(Text)
+    type: Mapped[str] = mapped_column(String(50))
+    authors: Mapped[list] = mapped_column(JSON)
+    year: Mapped[int] = mapped_column(Integer)
+    venue: Mapped[str | None] = mapped_column(Text)
+    discipline: Mapped[str] = mapped_column(String(100))
+    subdiscipline: Mapped[str | None] = mapped_column(String(100))
+    tags: Mapped[list] = mapped_column(JSON)
+    abstract: Mapped[str] = mapped_column(Text)
+    download_url: Mapped[str | None] = mapped_column(String(500))
+    external_url: Mapped[str | None] = mapped_column(String(500))
+    doi: Mapped[str | None] = mapped_column(String(200))
+    status: Mapped[str] = mapped_column(
+        String(20), default="pending", index=True
+    )
+    admin_note: Mapped[str | None] = mapped_column(Text)
+    resource_id: Mapped[str | None] = mapped_column(
+        ForeignKey("resources.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    user: Mapped["User"] = relationship("User", back_populates="submissions")
+    resource: Mapped["Resource"] = relationship("Resource", back_populates="submissions")

@@ -174,3 +174,56 @@ class HistoryEntryResponse(CamelBaseModel):
 
 class HistoryListResponse(CamelBaseModel):
     history: list[HistoryEntryResponse]
+
+
+class ResourceSubmissionCreate(CamelBaseModel):
+    title: str
+    type: str = Field(..., pattern=r"^(paper|book|dataset|tutorial)$")
+    authors: list[str]
+    year: int = Field(..., ge=-3000, le=2100)
+    venue: str | None = None
+    discipline: str
+    subdiscipline: str | None = None
+    tags: list[str] = Field(default_factory=list)
+    abstract: str
+    download_url: str | None = Field(None, max_length=500)
+    external_url: str | None = Field(None, max_length=500)
+    doi: str | None = Field(None, max_length=200)
+
+
+class ResourceSubmissionReview(CamelBaseModel):
+    status: str = Field(..., pattern=r"^(pending|approved|rejected)$")
+    admin_note: str | None = None
+    resource_id: str | None = Field(None, max_length=100)
+
+
+class ResourceSubmissionResponse(CamelBaseModel):
+    model_config = ConfigDict(
+        from_attributes=True, populate_by_name=True, alias_generator=_to_camel
+    )
+
+    id: int
+    user_id: int
+    username: str
+    title: str
+    type: str
+    authors: list[str]
+    year: int
+    venue: str | None
+    discipline: str
+    subdiscipline: str | None
+    tags: list[str]
+    abstract: str
+    download_url: str | None
+    external_url: str | None
+    doi: str | None
+    status: str
+    admin_note: str | None
+    resource_id: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ResourceSubmissionListResponse(CamelBaseModel):
+    data: list[ResourceSubmissionResponse]
+    meta: PaginationMeta

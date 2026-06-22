@@ -12,6 +12,10 @@ import {
   type FavoriteCreateResponse,
   type HistoryCreateResponse,
   type HistoryEntry,
+  type ResourceSubmission,
+  type ResourceSubmissionCreate,
+  type ResourceSubmissionListResponse,
+  type ResourceSubmissionReview,
 } from './types'
 
 /**
@@ -227,6 +231,33 @@ class RemoteApiClient {
 
   async removeFromHistory(resourceId: string): Promise<void> {
     return this.request<void>(`/history/${resourceId}`, { method: 'DELETE' })
+  }
+
+  // Resource submissions
+  async createSubmission(submission: ResourceSubmissionCreate): Promise<ResourceSubmission> {
+    return this.request<ResourceSubmission>('/submissions/', {
+      method: 'POST',
+      body: JSON.stringify(submission),
+    })
+  }
+
+  async listMySubmissions(): Promise<ResourceSubmissionListResponse> {
+    return this.request<ResourceSubmissionListResponse>('/submissions/me')
+  }
+
+  async listPendingSubmissions(): Promise<ResourceSubmissionListResponse> {
+    return this.request<ResourceSubmissionListResponse>('/submissions/pending')
+  }
+
+  async getSubmission(id: string): Promise<ResourceSubmission> {
+    return this.request<ResourceSubmission>(`/submissions/${id}`)
+  }
+
+  async reviewSubmission(id: string, review: ResourceSubmissionReview): Promise<ResourceSubmission> {
+    return this.request<ResourceSubmission>(`/submissions/${id}/review`, {
+      method: 'PATCH',
+      body: JSON.stringify(review),
+    })
   }
 }
 

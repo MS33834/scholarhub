@@ -1,6 +1,6 @@
 import { NavLink, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { Search, User, LogOut, Shield } from 'lucide-react'
+import { Search, User, LogOut, Shield, Upload } from 'lucide-react'
 import { useUI } from '@/store'
 import { useT } from '@/i18n/useLang'
 import { useAuth } from '@/store/authStore'
@@ -93,6 +93,16 @@ export function SiteHeader() {
             >
               EN/中
             </button>
+
+            <Link
+              to={isAuthenticated ? '/submit' : '/login'}
+              className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-moss px-2 py-1 transition-colors"
+              aria-label={t('nav.submit')}
+              title={t('nav.submit')}
+            >
+              <Upload size={18} />
+              <span>{t('nav.submit')}</span>
+            </Link>
 
             {isAuthenticated ? (
               <div className="flex items-center" aria-label={t('profile.user')}>
