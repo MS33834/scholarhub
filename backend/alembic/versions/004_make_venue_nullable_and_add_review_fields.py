@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "004_make_venue_nullable_and_add_review_fields"
+revision: str = "004_venue_nullable_review_fields"
 down_revision: Union[str, None] = "003_add_resource_submissions"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

@@ -9,20 +9,41 @@ from app.db.session import async_session, engine
 from app.models.models import Base, User
 
 
-async def _run_migrations():
-    """Run Alembic migrations when available; fall back to create_all only if Alembic is missing."""
+def _run_migrations_sync():
+    """Run Alembic migrations in a dedicated event loop.
+
+    This runs in a worker thread so it can be awaited from an async context
+    without nesting asyncio.run calls.
+    """
     try:
         from alembic import command
         from alembic.config import Config
     except ImportError:
         print("Alembic not installed; falling back to create_all")
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+        asyncio.run(_create_all())
         return
 
     alembic_cfg = Config("alembic.ini")
     command.upgrade(alembic_cfg, "head")
     print("Migrations applied successfully")
+
+
+async def _create_all():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
+async def _run_migrations():
+    """Run Alembic migrations when available; fall back to create_all only if Alembic is missing."""
+    try:
+        from alembic import command  # noqa: F401
+        from alembic.config import Config  # noqa: F401
+    except ImportError:
+        print("Alembic not installed; falling back to create_all")
+        await _create_all()
+        return
+
+    await asyncio.to_thread(_run_migrations_sync)
 
 
 async def _ensure_admin(db: AsyncSession):
