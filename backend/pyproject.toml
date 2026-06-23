@@ -17,7 +17,8 @@ dependencies = [
     "python-multipart>=0.0.12",
     "httpx>=0.28.0",
     "slowapi>=0.1.9",
-    "limits>=3.14.0",
+    "limits[redis]>=3.14.0",
+    "redis>=5.0.0",
 ]
 
 [project.optional-dependencies]

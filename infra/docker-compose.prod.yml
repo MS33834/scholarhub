@@ -28,6 +28,20 @@ services:
     networks:
       - scholarhub
 
+  redis:
+    image: redis:7-alpine
+    container_name: scholarhub-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - scholarhub
+
   backend:
     build:
       context: ..
@@ -41,11 +55,14 @@ services:
       SCHOLARHUB_ALLOWED_HOSTS: ${SCHOLARHUB_ALLOWED_HOSTS}
       SCHOLARHUB_CORS_ORIGINS: ${SCHOLARHUB_CORS_ORIGINS}
       SCHOLARHUB_RATE_LIMIT_PER_MINUTE: ${SCHOLARHUB_RATE_LIMIT_PER_MINUTE:-120}
+      SCHOLARHUB_REDIS_URL: redis://redis:6379/0
       SCHOLARHUB_ADMIN_EMAIL: ${SCHOLARHUB_ADMIN_EMAIL}
       SCHOLARHUB_ADMIN_PASSWORD: ${SCHOLARHUB_ADMIN_PASSWORD}
       UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -90,6 +107,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   scholarhub:

@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Callable
 from typing import Any
 
@@ -7,6 +8,8 @@ from slowapi.util import get_remote_address
 
 from app.core.config import settings
 from app.core.util import get_client_ip_from_forwarded
+
+logger = logging.getLogger(__name__)
 
 
 def _get_client_ip(request: Request) -> str:
@@ -23,7 +26,46 @@ def _get_client_ip(request: Request) -> str:
     return get_remote_address(request)
 
 
-limiter = Limiter(key_func=_get_client_ip)
+def _create_limiter() -> Limiter:
+    """Create a rate limiter backed by Redis when available.
+
+    Falls back to in-memory storage if Redis is not configured or unreachable.
+    In multi-worker deployments the in-memory fallback means each worker has
+    its own independent counter, so the effective limit is multiplied by the
+    worker count — always configure Redis in production.
+    """
+    if settings.environment == "test":
+        return Limiter(key_func=_get_client_ip, storage_uri="memory://")
+
+    if not settings.redis_url:
+        logger.warning(
+            "SCHOLARHUB_REDIS_URL is not set; rate limiting falls back to "
+            "in-memory storage. Limits are per-process and will not be shared "
+            "across workers. Configure Redis for production deployments."
+        )
+        return Limiter(key_func=_get_client_ip, storage_uri="memory://")
+
+    try:
+        limiter = Limiter(key_func=_get_client_ip, storage_uri=settings.redis_url)
+        # Verify connectivity by checking the storage backend.
+        from limits.storage import storage_from_string
+
+        storage = storage_from_string(settings.redis_url)
+        if not storage.check():
+            raise ConnectionError("Redis storage check failed")
+        logger.info("Rate limiter connected to Redis: %s", settings.redis_url)
+        return limiter
+    except Exception:
+        logger.error(
+            "Failed to connect to Redis at %s; falling back to in-memory "
+            "rate limiting. This means limits are NOT shared across workers.",
+            settings.redis_url,
+            exc_info=True,
+        )
+        return Limiter(key_func=_get_client_ip, storage_uri="memory://")
+
+
+limiter = _create_limiter()
 
 
 def rate_limit(limit_value: str | None = None, **kwargs: Any) -> Callable[[Any], Any]:

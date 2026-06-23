@@ -15,6 +15,7 @@ from app.api.users import router as users_router
 from app.core.config import settings
 from app.core.limiter import limiter, rate_limit
 from app.core.logging import configure_logging
+from app.middleware.max_body import MaxBodySizeMiddleware
 from app.middleware.request_logging import RequestLoggingMiddleware
 
 configure_logging()
@@ -68,6 +69,10 @@ class SecurityHeadersMiddleware:
 
 # Middleware order matters: request logging first (outermost) so it captures
 # the full request lifecycle, then security headers, CORS, and trusted host.
+# MaxBodySizeMiddleware is added first (innermost) so that 413 responses still
+# pass through RequestLogging (for correlation) and SecurityHeaders, and so
+# CORS preflight (OPTIONS) requests handled by CORSMiddleware are not blocked.
+app.add_middleware(MaxBodySizeMiddleware, max_size=1_048_576)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 

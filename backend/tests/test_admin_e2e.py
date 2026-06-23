@@ -11,6 +11,7 @@ This module exercises the complete lifecycle used by the development team:
 import pytest
 from sqlalchemy import select
 
+from app.core.config import settings
 from app.models.models import Favorite, ReadingHistory, User
 from scripts.create_admin import create_admin
 
@@ -40,7 +41,7 @@ async def test_admin_login_and_token_refresh(client, test_engine, test_async_ses
 
     login = await client.post(
         "/api/auth/login",
-        json={"username": "admin", "password": "changeme"},
+        json={"username": "admin", "password": settings.admin_password},
     )
     assert login.status_code == 200
     data = login.json()
@@ -69,7 +70,7 @@ async def test_admin_resource_crud_is_isolated_from_regular_users(
 
     admin_login = await client.post(
         "/api/auth/login",
-        json={"username": "admin", "password": "changeme"},
+        json={"username": "admin", "password": settings.admin_password},
     )
     admin_token = admin_login.json()["accessToken"]
 
@@ -159,7 +160,7 @@ async def test_user_registration_login_favorite_history_flow(
     # Admin creates a resource for the user to interact with.
     admin_login = await client.post(
         "/api/auth/login",
-        json={"username": "admin", "password": "changeme"},
+        json={"username": "admin", "password": settings.admin_password},
     )
     admin_token = admin_login.json()["accessToken"]
 
@@ -255,7 +256,7 @@ async def test_favorites_and_history_are_isolated_between_users(
     admin_token = (
         await client.post(
             "/api/auth/login",
-            json={"username": "admin", "password": "changeme"},
+            json={"username": "admin", "password": settings.admin_password},
         )
     ).json()["accessToken"]
 

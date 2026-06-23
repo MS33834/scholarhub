@@ -3,6 +3,27 @@ from functools import lru_cache
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Test-only secrets. These are NEVER used outside the test environment and
+# exist solely so the test suite can run without manual .env configuration.
+_TEST_SECRET_KEY = "TEST_ONLY_DO_NOT_USE_IN_PRODUCTION_0123456789abcdef"
+_TEST_ADMIN_PASSWORD = "test_admin_password_12345"
+
+# Secrets that must never appear in any real environment.
+_WEAK_SECRET_KEYS = frozenset({
+    "",
+    "change-me-in-production-use-openssl-rand-hex-32",
+    _TEST_SECRET_KEY,
+})
+_WEAK_ADMIN_PASSWORDS = frozenset({
+    "",
+    "changeme",
+    "change-me",
+    "admin",
+    "password",
+    "admin123",
+    _TEST_ADMIN_PASSWORD,
+})
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -19,10 +40,8 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "postgresql+asyncpg://scholarhub:scholarhub@localhost:5432/scholarhub"
 
-    # JWT
-    secret_key: str = Field(
-        default="change-me-in-production-use-openssl-rand-hex-32", min_length=32
-    )
+    # JWT — no default; must be provided via environment in any non-test env.
+    secret_key: str = Field(default="")
     # Access tokens are short-lived; refresh tokens are long-lived but stored
     # only on the client (cookie/localStorage) and rotated on refresh.
     access_token_expire_minutes: int = 15
@@ -42,18 +61,25 @@ class Settings(BaseSettings):
     # Rate limiting (requests per minute, per endpoint/IP)
     rate_limit_per_minute: int = Field(default=60, ge=1)
 
+    # Redis for distributed rate limiting. When empty, falls back to
+    # in-memory storage (single-process only). In multi-worker deployments
+    # a Redis URL is strongly recommended so limits are shared across workers.
+    redis_url: str = ""
+
     # Reverse proxy trust. Number of trusted proxies in front of the app.
     # X-Forwarded-For is parsed from the right; 1 = trust the immediate proxy.
-    trusted_proxies_count: int = Field(default=1, ge=0)
+    # Default is 0 (trust nothing) so misconfigured deployments cannot be
+    # spoofed. Set explicitly when behind a known proxy chain.
+    trusted_proxies_count: int = Field(default=0, ge=0)
 
     # Logging
     log_level: str = Field(default="INFO", pattern=r"^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$")
     json_logs: bool = Field(default=False)
 
-    # Admin
+    # Admin — no default password; must be provided via environment.
     admin_email: str = "admin@scholarhub.local"
     admin_username: str = "admin"
-    admin_password: str = Field(default="changeme", min_length=8)
+    admin_password: str = Field(default="")
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -79,15 +105,49 @@ class Settings(BaseSettings):
         return value
 
     @model_validator(mode="after")
-    def validate_production(self):
+    def validate_secrets(self):
+        """Enforce strong secrets in every non-test environment."""
+
+        # ---- Test environment: auto-fill test secrets if not provided ----
+        if self.environment == "test":
+            if not self.secret_key:
+                self.secret_key = _TEST_SECRET_KEY
+            if not self.admin_password:
+                self.admin_password = _TEST_ADMIN_PASSWORD
+            return self
+
+        # ---- Non-test environments: reject weak/missing secrets ----
+        if self.secret_key in _WEAK_SECRET_KEYS:
+            raise ValueError(
+                "SCHOLARHUB_SECRET_KEY is missing or uses a known-weak value. "
+                "Generate a strong key with: openssl rand -hex 32"
+            )
+        if len(self.secret_key) < 32:
+            raise ValueError(
+                "SCHOLARHUB_SECRET_KEY must be at least 32 characters long. "
+                "Generate with: openssl rand -hex 32"
+            )
+
+        if self.admin_password in _WEAK_ADMIN_PASSWORDS:
+            raise ValueError(
+                "SCHOLARHUB_ADMIN_PASSWORD is missing or uses a common weak value. "
+                "Provide a strong password of at least 12 characters."
+            )
+        if len(self.admin_password) < 12:
+            raise ValueError(
+                "SCHOLARHUB_ADMIN_PASSWORD must be at least 12 characters long."
+            )
+
+        # ---- Production-specific checks ----
         if self.is_production:
-            if self.secret_key == "change-me-in-production-use-openssl-rand-hex-32":
-                raise ValueError("SCHOLARHUB_SECRET_KEY must be changed in production")
             hosts = self.allowed_hosts_list
             if not hosts or hosts == ["*"]:
-                raise ValueError("SCHOLARHUB_ALLOWED_HOSTS must be explicitly set in production")
+                raise ValueError(
+                    "SCHOLARHUB_ALLOWED_HOSTS must be explicitly set in production"
+                )
             if "*" in self.cors_origins_list:
                 raise ValueError("CORS wildcard '*' is not allowed in production")
+
         return self
 
     @property

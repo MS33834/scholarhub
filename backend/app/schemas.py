@@ -87,21 +87,21 @@ class Citation(CamelBaseModel):
 class ResourceBase(CamelBaseModel):
     id: str = Field(..., max_length=100)
     type: str = Field(..., pattern=r"^(paper|book|dataset|tutorial)$")
-    title: str
-    authors: list[str]
+    title: str = Field(..., max_length=1000)
+    authors: list[str] = Field(..., max_length=200)
     year: int = Field(..., ge=-3000, le=2100)
-    venue: str | None = None
-    discipline: str
-    subdiscipline: str | None = None
-    tags: list[str] = Field(default_factory=list)
-    abstract: str
-    preview: str
+    venue: str | None = Field(None, max_length=500)
+    discipline: str = Field(..., max_length=100)
+    subdiscipline: str | None = Field(None, max_length=100)
+    tags: list[str] = Field(default_factory=list, max_length=50)
+    abstract: str = Field(..., max_length=20000)
+    preview: str = Field(..., max_length=5000)
     download_url: str | None = Field(None, max_length=500)
     external_url: str | None = Field(None, max_length=500)
     doi: str | None = Field(None, max_length=200)
     citation: Citation
     citations: int | None = Field(None, ge=0)
-    added_at: str | None = None
+    added_at: str | None = Field(None, max_length=20)
 
 
 class ResourceCreate(ResourceBase):
@@ -110,21 +110,21 @@ class ResourceCreate(ResourceBase):
 
 class ResourceUpdate(CamelBaseModel):
     type: str | None = Field(None, pattern=r"^(paper|book|dataset|tutorial)$")
-    title: str | None = None
-    authors: list[str] | None = None
+    title: str | None = Field(None, max_length=1000)
+    authors: list[str] | None = Field(None, max_length=200)
     year: int | None = Field(None, ge=-3000, le=2100)
-    venue: str | None = None
-    discipline: str | None = None
-    subdiscipline: str | None = None
-    tags: list[str] | None = None
-    abstract: str | None = None
-    preview: str | None = None
+    venue: str | None = Field(None, max_length=500)
+    discipline: str | None = Field(None, max_length=100)
+    subdiscipline: str | None = Field(None, max_length=100)
+    tags: list[str] | None = Field(None, max_length=50)
+    abstract: str | None = Field(None, max_length=20000)
+    preview: str | None = Field(None, max_length=5000)
     download_url: str | None = Field(None, max_length=500)
     external_url: str | None = Field(None, max_length=500)
     doi: str | None = Field(None, max_length=200)
     citation: Citation | None = None
     citations: int | None = Field(None, ge=0)
-    added_at: str | None = None
+    added_at: str | None = Field(None, max_length=20)
 
 
 class ResourceResponse(ResourceBase):
@@ -201,15 +201,15 @@ class HistoryListResponse(CamelBaseModel):
 
 
 class ResourceSubmissionCreate(CamelBaseModel):
-    title: str
+    title: str = Field(..., max_length=1000)
     type: str = Field(..., pattern=r"^(paper|book|dataset|tutorial)$")
-    authors: list[str]
+    authors: list[str] = Field(..., max_length=200)
     year: int = Field(..., ge=-3000, le=2100)
-    venue: str | None = None
-    discipline: str
-    subdiscipline: str | None = None
-    tags: list[str] = Field(default_factory=list)
-    abstract: str
+    venue: str | None = Field(None, max_length=500)
+    discipline: str = Field(..., max_length=100)
+    subdiscipline: str | None = Field(None, max_length=100)
+    tags: list[str] = Field(default_factory=list, max_length=50)
+    abstract: str = Field(..., max_length=20000)
     download_url: str | None = Field(None, max_length=500)
     external_url: str | None = Field(None, max_length=500)
     doi: str | None = Field(None, max_length=200)
