@@ -177,9 +177,7 @@ async def test_delete_reading_list(client, test_user, db_session):
     )
     assert response.status_code == 204
 
-    result = await db_session.execute(
-        select(ReadingList).where(ReadingList.id == list_id)
-    )
+    result = await db_session.execute(select(ReadingList).where(ReadingList.id == list_id))
     assert result.scalar_one_or_none() is None
 
 
@@ -260,9 +258,7 @@ async def test_add_and_remove_item(client, test_user, sample_resource, db_sessio
 
 
 @pytest.mark.asyncio
-async def test_add_item_to_other_user_list(
-    client, test_user, another_user, sample_resource
-):
+async def test_add_item_to_other_user_list(client, test_user, another_user, sample_resource):
     create_response = await client.post(
         "/api/reading-lists/",
         json={"name": "Private List"},
@@ -312,9 +308,7 @@ async def test_remove_item_not_found(client, test_user, sample_resource):
 
 
 @pytest.mark.asyncio
-async def test_delete_reading_list_cascades_items(
-    client, test_user, sample_resource, db_session
-):
+async def test_delete_reading_list_cascades_items(client, test_user, sample_resource, db_session):
     create_response = await client.post(
         "/api/reading-lists/",
         json={"name": "Cascade List"},

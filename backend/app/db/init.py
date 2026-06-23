@@ -27,7 +27,9 @@ async def _run_migrations():
 
 async def _ensure_admin(db: AsyncSession):
     result = await db.execute(
-        select(User).where((User.email == settings.admin_email) | (User.username == settings.admin_username))
+        select(User).where(
+            (User.email == settings.admin_email) | (User.username == settings.admin_username)
+        )
     )
     if not result.first():
         admin = User(

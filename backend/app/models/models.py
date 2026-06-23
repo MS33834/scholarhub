@@ -18,7 +18,9 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     token_version: Mapped[int] = mapped_column(Integer, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
 
     favorites: Mapped[list["Favorite"]] = relationship(
         "Favorite", back_populates="user", cascade="all, delete-orphan"
@@ -121,9 +123,7 @@ class ResourceSubmission(Base):
     __tablename__ = "resource_submissions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     title: Mapped[str] = mapped_column(Text)
     type: Mapped[str] = mapped_column(String(50))
     authors: Mapped[list] = mapped_column(JSON)
@@ -136,16 +136,10 @@ class ResourceSubmission(Base):
     download_url: Mapped[str | None] = mapped_column(String(500))
     external_url: Mapped[str | None] = mapped_column(String(500))
     doi: Mapped[str | None] = mapped_column(String(200))
-    status: Mapped[str] = mapped_column(
-        String(20), default="pending", index=True
-    )
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
     admin_note: Mapped[str | None] = mapped_column(Text)
-    resource_id: Mapped[str | None] = mapped_column(
-        ForeignKey("resources.id", ondelete="SET NULL")
-    )
-    reviewed_by_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL")
-    )
+    resource_id: Mapped[str | None] = mapped_column(ForeignKey("resources.id", ondelete="SET NULL"))
+    reviewed_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
@@ -169,9 +163,7 @@ class ReadingList(Base):
     __tablename__ = "reading_lists"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(255))
     description: Mapped[str | None] = mapped_column(Text)
     is_public: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -197,9 +189,7 @@ class ReadingListItem(Base):
     __tablename__ = "reading_list_items"
 
     __table_args__ = (
-        UniqueConstraint(
-            "reading_list_id", "resource_id", name="uix_reading_list_resource"
-        ),
+        UniqueConstraint("reading_list_id", "resource_id", name="uix_reading_list_resource"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -213,7 +203,5 @@ class ReadingListItem(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 
-    reading_list: Mapped["ReadingList"] = relationship(
-        "ReadingList", back_populates="items"
-    )
+    reading_list: Mapped["ReadingList"] = relationship("ReadingList", back_populates="items")
     resource: Mapped["Resource"] = relationship("Resource", lazy="selectin")

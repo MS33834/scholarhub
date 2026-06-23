@@ -58,9 +58,7 @@ async def _generate_resource_id(db: AsyncSession, submission: ResourceSubmission
     return f"{base}-{uuid.uuid4().hex[:8]}"[:100]
 
 
-async def _create_resource_from_submission(
-    db: AsyncSession, submission: ResourceSubmission
-) -> str:
+async def _create_resource_from_submission(db: AsyncSession, submission: ResourceSubmission) -> str:
     """Create a Resource record from an approved submission and return its id."""
     resource_id = await _generate_resource_id(db, submission)
     resource = Resource(
@@ -220,9 +218,13 @@ async def list_pending_submissions(
     current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    query = select(ResourceSubmission).where(ResourceSubmission.status == "pending").options(
-        selectinload(ResourceSubmission.user),
-        selectinload(ResourceSubmission.reviewer),
+    query = (
+        select(ResourceSubmission)
+        .where(ResourceSubmission.status == "pending")
+        .options(
+            selectinload(ResourceSubmission.user),
+            selectinload(ResourceSubmission.reviewer),
+        )
     )
     return await _paginate_submissions(db, query, page, page_size)
 

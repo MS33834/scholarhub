@@ -33,9 +33,7 @@ async def list_users(
     total = total_result.scalar_one()
 
     offset = (page - 1) * page_size
-    result = await db.execute(
-        select(User).order_by(User.id).offset(offset).limit(page_size)
-    )
+    result = await db.execute(select(User).order_by(User.id).offset(offset).limit(page_size))
     users = result.scalars().all()
 
     total_pages = (total + page_size - 1) // page_size if total > 0 else 0

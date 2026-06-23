@@ -111,9 +111,7 @@ async def test_admin_approve_creates_resource(
 
 
 @pytest.mark.asyncio
-async def test_admin_reject_with_note(
-    client, test_user, admin_user, sample_submission_payload
-):
+async def test_admin_reject_with_note(client, test_user, admin_user, sample_submission_payload):
     response = await client.post(
         "/api/submissions/",
         json=sample_submission_payload,
@@ -167,9 +165,7 @@ async def test_list_pending_submissions_and_review_endpoint(
 
 
 @pytest.mark.asyncio
-async def test_submission_venue_nullable(
-    client, test_user, sample_submission_payload
-):
+async def test_submission_venue_nullable(client, test_user, sample_submission_payload):
     payload = sample_submission_payload.copy()
     payload.pop("venue")
     response = await client.post(

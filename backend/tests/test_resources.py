@@ -60,7 +60,7 @@ def _resource_payload(
         "addedAt": "2024-01-01",
         "citation": {
             "apa": "Author. (2024). Test.",
-            "mla": "Author. \"Test.\" 2024.",
+            "mla": 'Author. "Test." 2024.',
             "gbt": "Author. Test[J]. 2024.",
             "bibtex": "@article{test, title={Test}}",
         },
@@ -359,9 +359,7 @@ async def test_search_resources_with_filters(client, admin_user):
         )
         assert response.status_code == 201
 
-    response = await client.get(
-        "/api/resources/?q=machine&discipline=computer-science&year=2024"
-    )
+    response = await client.get("/api/resources/?q=machine&discipline=computer-science&year=2024")
     assert response.status_code == 200
     data = response.json()["data"]
     assert len(data) == 2

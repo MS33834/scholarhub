@@ -102,8 +102,12 @@ async def refresh(request: Request, req: RefreshTokenRequest, db: AsyncSession =
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
 
-    new_access_token = create_access_token({"sub": str(user.id), "token_version": user.token_version})
-    new_refresh_token = create_refresh_token({"sub": str(user.id), "token_version": user.token_version})
+    new_access_token = create_access_token(
+        {"sub": str(user.id), "token_version": user.token_version}
+    )
+    new_refresh_token = create_refresh_token(
+        {"sub": str(user.id), "token_version": user.token_version}
+    )
     return TokenResponse(
         access_token=new_access_token,
         refresh_token=new_refresh_token,

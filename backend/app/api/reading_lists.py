@@ -24,21 +24,15 @@ router = APIRouter(prefix="/reading-lists", tags=["reading-lists"])
 
 def _check_ownership(reading_list: ReadingList, current_user: User) -> None:
     if reading_list.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
 
 
-async def _load_reading_list_detail(
-    db: AsyncSession, list_id: int
-) -> ReadingList:
+async def _load_reading_list_detail(db: AsyncSession, list_id: int) -> ReadingList:
     """Load a reading list with items and their resources eagerly."""
     result = await db.execute(select(ReadingList).where(ReadingList.id == list_id))
     reading_list = result.scalar_one_or_none()
     if reading_list is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Reading list not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading list not found")
 
     items_result = await db.execute(
         select(ReadingListItem)
@@ -119,9 +113,7 @@ async def update_reading_list(
     result = await db.execute(select(ReadingList).where(ReadingList.id == list_id))
     reading_list = result.scalar_one_or_none()
     if not reading_list:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Reading list not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading list not found")
     _check_ownership(reading_list, current_user)
 
     if payload.name is not None:
@@ -147,14 +139,10 @@ async def delete_reading_list(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(ReadingList).where(ReadingList.id == list_id)
-    )
+    result = await db.execute(select(ReadingList).where(ReadingList.id == list_id))
     reading_list = result.scalar_one_or_none()
     if not reading_list:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Reading list not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading list not found")
     _check_ownership(reading_list, current_user)
 
     await db.delete(reading_list)
@@ -177,18 +165,12 @@ async def add_item_to_reading_list(
     result = await db.execute(select(ReadingList).where(ReadingList.id == list_id))
     reading_list = result.scalar_one_or_none()
     if not reading_list:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Reading list not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading list not found")
     _check_ownership(reading_list, current_user)
 
-    resource_result = await db.execute(
-        select(Resource).where(Resource.id == payload.resource_id)
-    )
+    resource_result = await db.execute(select(Resource).where(Resource.id == payload.resource_id))
     if not resource_result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
 
     existing = await db.execute(
         select(ReadingListItem).where(
@@ -232,9 +214,7 @@ async def remove_item_from_reading_list(
     result = await db.execute(select(ReadingList).where(ReadingList.id == list_id))
     reading_list = result.scalar_one_or_none()
     if not reading_list:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Reading list not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading list not found")
     _check_ownership(reading_list, current_user)
 
     item_result = await db.execute(
@@ -245,9 +225,7 @@ async def remove_item_from_reading_list(
     )
     item = item_result.scalar_one_or_none()
     if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Item not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
     await db.delete(item)
     await db.commit()
