@@ -6,21 +6,20 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from app.core.config import settings
+from app.core.util import get_client_ip_from_forwarded
 
 
 def _get_client_ip(request: Request) -> str:
     """Return the client IP, honouring X-Forwarded-For when behind a proxy.
 
-    In containerised deployments the immediate remote address is usually the
-    reverse proxy, so we prefer the forwarded header. The last item in
-    X-Forwarded-For is typically the closest proxy; the first is the original
-    client. We use the first non-empty value and fall back to the socket IP.
+    The rightmost entries in X-Forwarded-For are added by the proxies closest
+    to the application. By taking the entry ``trusted_proxies_count`` from the
+    right we prevent clients from spoofing the header with fake leftmost IPs.
     """
     forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        parts = [p.strip() for p in forwarded.split(",") if p.strip()]
-        if parts:
-            return parts[0]
+    ip = get_client_ip_from_forwarded(forwarded, settings.trusted_proxies_count)
+    if ip:
+        return ip
     return get_remote_address(request)
 
 

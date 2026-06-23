@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     # Rate limiting (requests per minute, per endpoint/IP)
     rate_limit_per_minute: int = Field(default=60, ge=1)
 
+    # Reverse proxy trust. Number of trusted proxies in front of the app.
+    # X-Forwarded-For is parsed from the right; 1 = trust the immediate proxy.
+    trusted_proxies_count: int = Field(default=1, ge=0)
+
     # Logging
     log_level: str = Field(default="INFO", pattern=r"^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$")
     json_logs: bool = Field(default=False)

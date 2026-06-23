@@ -38,7 +38,7 @@ async def list_users(
     )
     users = result.scalars().all()
 
-    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 0
 
     return UserListResponse(
         data=[UserResponse.model_validate(user) for user in users],
@@ -75,6 +75,17 @@ async def update_user(
     user = result.scalar_one_or_none()
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if user_id == current_user.id:
+        if req.is_active is False:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot deactivate your own account"
+            )
+        if req.is_admin is False:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot remove your own admin privileges",
+            )
 
     if req.is_active is not None:
         user.is_active = req.is_active

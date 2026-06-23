@@ -7,7 +7,7 @@ import { DisciplineList } from '@/components/DisciplineCard'
 import { ResourceCard } from '@/components/ResourceCard'
 import { Skeleton } from '@/components/Skeleton'
 import { useT } from '@/i18n/useLang'
-import { useReadingHistory } from '@/store/readingHistory'
+import { useReadingHistory } from '@/hooks/useReadingHistory'
 import { useResources } from '@/hooks/useResources'
 
 const featuredIds = [

@@ -283,7 +283,12 @@ async def review_submission(
     updates["reviewed_by_id"] = current_user.id
     updates["reviewed_at"] = datetime.now(timezone.utc)
 
-    if updates.get("status") == "approved":
+    # resource_id is only meaningful for approvals; drop it for other statuses.
+    status_value = updates.get("status")
+    if status_value != "approved":
+        updates.pop("resource_id", None)
+
+    if status_value == "approved":
         resource_id = updates.get("resource_id") or submission.resource_id
         if resource_id:
             existing = await db.execute(select(Resource.id).where(Resource.id == resource_id))

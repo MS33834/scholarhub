@@ -29,7 +29,7 @@ export const useReadingLists = create<ReadingListsState>()(
       lists: [],
       
       createList: (name: string, description = '') => {
-        const id = `list_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        const id = `list_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
         const newList: ReadingList = {
           id,
           name,
@@ -92,11 +92,11 @@ export const useReadingLists = create<ReadingListsState>()(
       },
       
       getAllLists: () => {
-        return get().lists.sort((a, b) => b.updatedAt - a.updatedAt)
+        return [...get().lists].sort((a, b) => b.updatedAt - a.updatedAt)
       },
-      
+
       getPublicLists: () => {
-        return get().lists
+        return [...get().lists]
           .filter(list => list.isPublic)
           .sort((a, b) => b.updatedAt - a.updatedAt)
       }

@@ -7,9 +7,9 @@ export const ResourceTypeSchema = z.enum(['paper', 'dataset', 'book', 'tutorial'
 export const DisciplineSchema = z.enum([
   'computer-science',
   'physics',
-  'biology',
   'mathematics',
-  'economics',
+  'life-sciences',
+  'social-sciences',
   'humanities'
 ])
 

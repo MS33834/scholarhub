@@ -81,6 +81,16 @@ export function ResourcesPage() {
 
   const { resources: filtered, loading, error, meta } = useResources({ filters })
 
+  // Fetch all resources matching the current non-page filters so year/tag
+  // options are not limited to the current page.
+  const { resources: allMatching } = useResources({
+    filters: {
+      type: type === 'all' ? undefined : type,
+      discipline: discipline === 'all' ? undefined : discipline,
+      limit: 10000,
+    },
+  })
+
   const typeOptions = typeOrder.map((tp) => ({ value: tp, label: t(`type.${tp}` as const) }))
   const disciplineOptions = disciplines.map((d) => ({
     value: d.slug,
@@ -88,15 +98,15 @@ export function ResourcesPage() {
   }))
 
   const yearOptions = useMemo(() => {
-    const years = [...new Set(filtered.map((r) => r.year))]
+    const years = [...new Set(allMatching.map((r) => r.year))]
     return years
       .sort((a, b) => b - a)
       .map((y) => ({ value: String(y), label: String(y) }))
-  }, [filtered])
+  }, [allMatching])
 
   const tagOptions = useMemo(() => {
     const counts = new Map<string, number>()
-    filtered.forEach((r) => {
+    allMatching.forEach((r) => {
       r.tags.forEach((t) => {
         counts.set(t, (counts.get(t) || 0) + 1)
       })
@@ -104,7 +114,7 @@ export function ResourcesPage() {
     return [...counts.entries()]
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .map(([name]) => ({ value: name, label: name }))
-  }, [filtered])
+  }, [allMatching])
 
   return (
     <div className="page-fade mx-auto max-w-column px-6 sm:px-8 pt-16 pb-32">

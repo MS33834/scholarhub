@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import time
 
+from app.core.config import settings
 from app.core.logging import ACCESS_LOG_NAME, REQUEST_ID_CTX, generate_request_id, get_logger
+from app.core.util import get_client_ip_from_forwarded
 
 access_logger = get_logger(ACCESS_LOG_NAME)
 
@@ -55,15 +57,15 @@ class RequestLoggingMiddleware:
         finally:
             duration_ms = (time.perf_counter() - start) * 1000
 
-            client_ip = "-"
+            forwarded = None
             for name, value in scope.get("headers", []):
                 if name.lower() == b"x-forwarded-for":
-                    client_ip = value.decode().split(",")[0].strip()
+                    forwarded = value.decode()
                     break
-            else:
+            client_ip = get_client_ip_from_forwarded(forwarded, settings.trusted_proxies_count)
+            if client_ip is None:
                 client = scope.get("client")
-                if client:
-                    client_ip = client[0]
+                client_ip = client[0] if client else "-"
 
             user_agent = "-"
             for name, value in scope.get("headers", []):

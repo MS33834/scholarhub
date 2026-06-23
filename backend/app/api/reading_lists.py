@@ -62,11 +62,12 @@ async def list_reading_lists(
         select(ReadingList)
         .where(ReadingList.user_id == current_user.id)
         .order_by(ReadingList.created_at.desc())
+        .options(selectinload(ReadingList.items).selectinload(ReadingListItem.resource))
     )
 
     reading_lists = result.scalars().all()
     for r in reading_lists:
-        await _load_reading_list_detail(db, r.id)
+        r.item_count = len(r.items)
     data = [ReadingListDetailResponse.model_validate(r) for r in reading_lists]
     return ReadingListListResponse(data=data)
 

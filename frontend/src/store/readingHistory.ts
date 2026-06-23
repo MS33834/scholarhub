@@ -57,7 +57,7 @@ export const useReadingHistory = create<ReadingHistoryState>()(
       },
       
       getRecentHistory: (limit = 50) => {
-        return get().history
+        return [...get().history]
           .sort((a, b) => b.timestamp - a.timestamp)
           .slice(0, limit)
       }
