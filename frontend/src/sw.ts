@@ -121,4 +121,4 @@ self.addEventListener('message', (event) => {
   }
 })
 
-console.log('Service Worker registered successfully')
+

@@ -61,7 +61,6 @@ export function PDFViewer({ url, isOpen, onClose }: PDFViewerProps) {
         pdfDocRef.current = pdf
         setTotalPages(pdf.numPages)
         setCurrentPage(1)
-        await renderPage(pdf, 1, scale)
       } catch (err) {
         setError(t('pdf.error'))
         console.error('PDF loading error:', err)
@@ -78,7 +77,7 @@ export function PDFViewer({ url, isOpen, onClose }: PDFViewerProps) {
         pdfDocRef.current = null
       }
     }
-  }, [isOpen, url, renderPage, scale, t])
+  }, [isOpen, url, t])
 
   useEffect(() => {
     if (pdfDocRef.current && currentPage > 0) {

@@ -26,11 +26,13 @@ async def _run_migrations():
 
 
 async def _ensure_admin(db: AsyncSession):
-    result = await db.execute(select(User).where(User.email == settings.admin_email))
-    if not result.scalar_one_or_none():
+    result = await db.execute(
+        select(User).where((User.email == settings.admin_email) | (User.username == settings.admin_username))
+    )
+    if not result.first():
         admin = User(
             email=settings.admin_email,
-            username="admin",
+            username=settings.admin_username,
             hashed_password=hash_password(settings.admin_password),
             is_active=True,
             is_admin=True,

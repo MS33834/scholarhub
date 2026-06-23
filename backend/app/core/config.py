@@ -52,6 +52,7 @@ class Settings(BaseSettings):
 
     # Admin
     admin_email: str = "admin@scholarhub.local"
+    admin_username: str = "admin"
     admin_password: str = Field(default="changeme", min_length=8)
 
     @field_validator("cors_origins", mode="before")

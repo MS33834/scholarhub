@@ -29,6 +29,13 @@ def create_refresh_token(data: dict) -> str:
     return _create_token(data, timedelta(days=settings.refresh_token_expire_days), "refresh")
 
 
+def token_version_matches(payload: dict | None, expected_version: int) -> bool:
+    """Return True if the token payload carries the expected token_version."""
+    if payload is None:
+        return False
+    return payload.get("token_version") == expected_version
+
+
 def decode_token(token: str, expected_type: str | None = None) -> dict | None:
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])

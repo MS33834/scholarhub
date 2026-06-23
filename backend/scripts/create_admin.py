@@ -32,8 +32,10 @@ async def create_admin(
 
     async with db_session_factory() as session:
         session: AsyncSession
-        result = await session.execute(select(User).where(User.email == settings.admin_email))
-        existing = result.scalar_one_or_none()
+        result = await session.execute(
+            select(User).where((User.email == settings.admin_email) | (User.username == settings.admin_username))
+        )
+        existing = result.first()
 
         if existing:
             print(f"Admin user already exists: {settings.admin_email}")
@@ -41,7 +43,7 @@ async def create_admin(
 
         admin = User(
             email=settings.admin_email,
-            username="admin",
+            username=settings.admin_username,
             hashed_password=hash_password(settings.admin_password),
             is_active=True,
             is_admin=True,

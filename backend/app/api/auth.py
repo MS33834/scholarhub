@@ -10,6 +10,7 @@ from app.core.security import (
     create_refresh_token,
     decode_token,
     hash_password,
+    token_version_matches,
     verify_password,
 )
 from app.db.session import get_db
@@ -42,8 +43,8 @@ async def register(request: Request, req: UserCreate, db: AsyncSession = Depends
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists")
     await db.refresh(user)
 
-    token = create_access_token({"sub": str(user.id)})
-    refresh_token = create_refresh_token({"sub": str(user.id)})
+    token = create_access_token({"sub": str(user.id), "token_version": user.token_version})
+    refresh_token = create_refresh_token({"sub": str(user.id), "token_version": user.token_version})
     return TokenResponse(
         access_token=token,
         refresh_token=refresh_token,
@@ -67,8 +68,8 @@ async def login(request: Request, req: UserLogin, db: AsyncSession = Depends(get
             status_code=status.HTTP_403_FORBIDDEN, detail="User account is disabled"
         )
 
-    token = create_access_token({"sub": str(user.id)})
-    refresh_token = create_refresh_token({"sub": str(user.id)})
+    token = create_access_token({"sub": str(user.id), "token_version": user.token_version})
+    refresh_token = create_refresh_token({"sub": str(user.id), "token_version": user.token_version})
     return TokenResponse(
         access_token=token,
         refresh_token=refresh_token,
@@ -96,13 +97,13 @@ async def refresh(request: Request, req: RefreshTokenRequest, db: AsyncSession =
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
 
-    if not user or not user.is_active:
+    if not user or not user.is_active or not token_version_matches(payload, user.token_version):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
 
-    new_access_token = create_access_token({"sub": str(user.id)})
-    new_refresh_token = create_refresh_token({"sub": str(user.id)})
+    new_access_token = create_access_token({"sub": str(user.id), "token_version": user.token_version})
+    new_refresh_token = create_refresh_token({"sub": str(user.id), "token_version": user.token_version})
     return TokenResponse(
         access_token=new_access_token,
         refresh_token=new_refresh_token,
@@ -110,6 +111,16 @@ async def refresh(request: Request, req: RefreshTokenRequest, db: AsyncSession =
         username=user.username,
         is_admin=user.is_admin,
     )
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    """Invalidate all issued tokens for the current user."""
+    current_user.token_version += 1
+    await db.commit()
+    return None
 
 
 @router.get("/me", response_model=UserResponse)

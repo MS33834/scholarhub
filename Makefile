@@ -11,7 +11,7 @@ help:
 	@echo "  make dev-landing     - Run landing page dev server"
 	@echo "  make build-frontend  - Build frontend production bundle"
 	@echo "  make build-landing   - Build GitHub Pages landing site"
-	@echo "  make install-frontend- Install frontend dependencies"
+	@echo "  make install-frontend - Install frontend dependencies"
 	@echo "  make install-landing - Install landing page dependencies"
 	@echo "  make test            - Run backend and frontend tests"
 	@echo "  make lint            - Run backend and frontend linters"
