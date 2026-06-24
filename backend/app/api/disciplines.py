@@ -50,6 +50,18 @@ DISCIPLINES = [
         "name_en": "Humanities",
         "description": "哲学、历史、文学与艺术理论。",
     },
+    {
+        "slug": "medicine",
+        "name": "医学",
+        "name_en": "Medicine",
+        "description": "临床医学、药理学、公共卫生与转化医学。",
+    },
+    {
+        "slug": "law",
+        "name": "法学",
+        "name_en": "Law",
+        "description": "宪法学、民法学、刑法学与国际法。",
+    },
 ]
 
 

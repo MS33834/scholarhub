@@ -87,13 +87,14 @@ class RemoteApiClient {
 
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
+      credentials: 'include',
       headers: {
         ...headers,
         ...Object.fromEntries(new Headers(options.headers).entries()),
       },
     })
 
-    if (response.status === 401 && !options.skipAuth && !options.skipRefresh && this.refreshToken) {
+    if (response.status === 401 && !options.skipAuth && !options.skipRefresh) {
       const refreshed = await this.refresh()
       if (refreshed) {
         return this.request(endpoint, { ...options, skipRefresh: true })
@@ -139,12 +140,13 @@ class RemoteApiClient {
   }
 
   async refresh(): Promise<AuthResponse | null> {
+    // Prefer the HttpOnly cookie (sent automatically via credentials: 'include').
+    // Fall back to the localStorage token for backward compatibility.
     const token = this.refreshToken
-    if (!token) return null
     try {
       const result = await this.request<AuthResponse>('/auth/refresh', {
         method: 'POST',
-        body: JSON.stringify({ refreshToken: token } satisfies RefreshTokenRequest),
+        body: token ? JSON.stringify({ refreshToken: token } satisfies RefreshTokenRequest) : undefined,
         skipAuth: true,
         skipRefresh: true,
       })

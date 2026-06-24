@@ -227,7 +227,7 @@ async def test_get_related_resources_sorted(client, admin_user):
         "unrelated-paper",
         authors=["Dave Other"],
         tags=["biology-tag"],
-        discipline="biology",
+        discipline="life-sciences",
     )
 
     for payload in [target, same_author, same_tag, same_discipline, unrelated]:

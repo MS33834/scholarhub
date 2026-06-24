@@ -1,6 +1,8 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi.extension import _rate_limit_exceeded_handler
 
@@ -14,11 +16,12 @@ from app.api.submissions import router as submissions_router
 from app.api.users import router as users_router
 from app.core.config import settings
 from app.core.limiter import limiter, rate_limit
-from app.core.logging import configure_logging
+from app.core.logging import configure_logging, get_logger
 from app.middleware.max_body import MaxBodySizeMiddleware
 from app.middleware.request_logging import RequestLoggingMiddleware
 
 configure_logging()
+logger = get_logger("scholarhub.errors")
 
 app = FastAPI(
     title=settings.app_name,
@@ -28,6 +31,65 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Return a structured 422 response for Pydantic validation errors."""
+    errors = []
+    for err in exc.errors():
+        loc = ".".join(str(part) for part in err.get("loc", []))
+        errors.append(
+            {
+                "field": loc,
+                "message": err.get("msg", "Invalid value"),
+                "type": err.get("type", "value_error"),
+            }
+        )
+    return JSONResponse(
+        status_code=422,
+        content={"detail": "Validation error", "errors": errors},
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Ensure HTTPException responses have a consistent format."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=getattr(exc, "headers", None),
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """Catch all unhandled exceptions, log with request id, return generic 500.
+
+    Stack traces are never sent to the client. The error is logged with the
+    request id so it can be correlated with access logs.
+    """
+    request_id = "-"
+    for name, value in request.scope.get("headers", []):
+        if name == b"x-request-id":
+            request_id = value.decode()
+            break
+    logger.error(
+        "Unhandled exception on %s %s (request_id=%s): %s",
+        request.method,
+        request.url.path,
+        request_id,
+        exc,
+        exc_info=True,
+        extra={"request_id": request_id, "path": request.url.path},
+    )
+    detail = "Internal server error"
+    if not settings.is_production:
+        detail = f"{type(exc).__name__}: {exc}"
+    return JSONResponse(
+        status_code=500,
+        content={"detail": detail},
+    )
 
 
 class SecurityHeadersMiddleware:

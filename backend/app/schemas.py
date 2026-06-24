@@ -2,7 +2,77 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+
+# Resource ID pattern: alphanumeric start, then alphanumeric/dot/dash/underscore.
+# Prevents path traversal (/, \, ..), SQL metacharacters, and whitespace.
+_RESOURCE_ID_PATTERN = r"^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+
+# Tag pattern: alphanumeric or CJK start, then word chars/spaces/dash/dot.
+# Prevents control characters, angle brackets, and quotes.
+_TAG_PATTERN = r"^[^\s<>\"'&\\]+$"
+_TAG_MAX_LENGTH = 50
+_AUTHOR_MAX_LENGTH = 200
+
+
+def _validate_resource_id(value: str) -> str:
+    if not value or len(value) > 100:
+        return value  # length handled by Field(max_length=...)
+    import re
+
+    if not re.match(_RESOURCE_ID_PATTERN, value):
+        raise ValueError(
+            "Resource ID must start with an alphanumeric character and contain only "
+            "letters, digits, dots, dashes, and underscores."
+        )
+    return value
+
+
+def _validate_discipline(value: str) -> str:
+    """Validate that the discipline slug exists in the canonical catalog."""
+    from app.api.disciplines import DISCIPLINES
+
+    valid_slugs = {d["slug"] for d in DISCIPLINES}
+    if value not in valid_slugs:
+        raise ValueError(
+            f"Invalid discipline '{value}'. Must be one of: {', '.join(sorted(valid_slugs))}"
+        )
+    return value
+
+
+def _validate_tags(tags: list[str]) -> list[str]:
+    for tag in tags:
+        if not tag:
+            raise ValueError("Tags must not be empty strings.")
+        if len(tag) > _TAG_MAX_LENGTH:
+            raise ValueError(f"Each tag must be at most {_TAG_MAX_LENGTH} characters long.")
+        import re
+
+        if not re.match(_TAG_PATTERN, tag):
+            raise ValueError(
+                "Tags must not contain angle brackets, quotes, ampersands, or backslashes."
+            )
+    return tags
+
+
+def _validate_authors(authors: list[str]) -> list[str]:
+    for author in authors:
+        if not author or not author.strip():
+            raise ValueError("Author names must not be empty.")
+        if len(author) > _AUTHOR_MAX_LENGTH:
+            raise ValueError(f"Each author name must be at most {_AUTHOR_MAX_LENGTH} characters long.")
+    return authors
+
+
+def _validate_url(value: str | None) -> str | None:
+    """Validate that URL fields use http or https scheme (or are None)."""
+    if value is None:
+        return value
+    lowered = value.strip().lower()
+    if not lowered.startswith(("http://", "https://")):
+        raise ValueError("URL must start with http:// or https://")
+    return value
 
 
 def _to_camel(snake: str) -> str:
@@ -103,6 +173,13 @@ class ResourceBase(CamelBaseModel):
     citations: int | None = Field(None, ge=0)
     added_at: str | None = Field(None, max_length=20)
 
+    _validate_id = field_validator("id")(_validate_resource_id)
+    _validate_discipline = field_validator("discipline")(_validate_discipline)
+    _validate_tags = field_validator("tags")(_validate_tags)
+    _validate_authors = field_validator("authors")(_validate_authors)
+    _validate_download_url = field_validator("download_url")(_validate_url)
+    _validate_external_url = field_validator("external_url")(_validate_url)
+
 
 class ResourceCreate(ResourceBase):
     pass
@@ -125,6 +202,12 @@ class ResourceUpdate(CamelBaseModel):
     citation: Citation | None = None
     citations: int | None = Field(None, ge=0)
     added_at: str | None = Field(None, max_length=20)
+
+    _validate_discipline = field_validator("discipline")(_validate_discipline)
+    _validate_tags = field_validator("tags")(_validate_tags)
+    _validate_authors = field_validator("authors")(_validate_authors)
+    _validate_download_url = field_validator("download_url")(_validate_url)
+    _validate_external_url = field_validator("external_url")(_validate_url)
 
 
 class ResourceResponse(ResourceBase):
@@ -213,6 +296,12 @@ class ResourceSubmissionCreate(CamelBaseModel):
     download_url: str | None = Field(None, max_length=500)
     external_url: str | None = Field(None, max_length=500)
     doi: str | None = Field(None, max_length=200)
+
+    _validate_discipline = field_validator("discipline")(_validate_discipline)
+    _validate_tags = field_validator("tags")(_validate_tags)
+    _validate_authors = field_validator("authors")(_validate_authors)
+    _validate_download_url = field_validator("download_url")(_validate_url)
+    _validate_external_url = field_validator("external_url")(_validate_url)
 
 
 class ResourceSubmissionReview(CamelBaseModel):

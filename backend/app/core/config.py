@@ -48,6 +48,13 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 7
     algorithm: str = "HS256"
 
+    # Refresh token cookie settings. In production the cookie is Secure and
+    # SameSite=Strict (same-origin only). In development SameSite=Lax allows
+    # cross-port testing; Secure is off because dev usually runs over HTTP.
+    refresh_token_cookie_name: str = "scholarhub_refresh"
+    refresh_token_cookie_secure: bool | None = None  # None → auto from environment
+    refresh_token_cookie_samesite: str = "strict"  # strict | lax | none
+
     # CORS — accepts a JSON array string or comma-separated origins.
     # Example: '["https://example.com"]' or 'https://a.com,https://b.com'
     # Development defaults cover the common Vite ports so the dev server
@@ -174,6 +181,21 @@ class Settings(BaseSettings):
         if self.is_production:
             return ["Authorization", "Content-Type"]
         return ["*"]
+
+    @property
+    def cookie_secure(self) -> bool:
+        """Whether the refresh token cookie should be Secure (HTTPS only)."""
+        if self.refresh_token_cookie_secure is not None:
+            return self.refresh_token_cookie_secure
+        return self.is_production
+
+    @property
+    def cookie_samesite(self) -> str:
+        """SameSite attribute for the refresh token cookie."""
+        mode = self.refresh_token_cookie_samesite.lower()
+        if mode not in ("strict", "lax", "none"):
+            return "strict" if self.is_production else "lax"
+        return mode
 
 
 @lru_cache

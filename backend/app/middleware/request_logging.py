@@ -13,7 +13,7 @@ import time
 
 from app.core.config import settings
 from app.core.logging import ACCESS_LOG_NAME, REQUEST_ID_CTX, generate_request_id, get_logger
-from app.core.util import get_client_ip_from_forwarded
+from app.core.util import get_client_ip_from_forwarded, sanitize_query_string
 
 access_logger = get_logger(ACCESS_LOG_NAME)
 
@@ -73,11 +73,16 @@ class RequestLoggingMiddleware:
                     user_agent = value.decode()
                     break
 
+            sanitized_query = sanitize_query_string(scope.get("query_string", b""))
+            path_with_query = scope["path"]
+            if sanitized_query:
+                path_with_query = f"{path_with_query}?{sanitized_query}"
+
             access_logger.info(
                 "%(method)s %(path)s %(status)s %(duration).2fms %(client_ip)s",
                 {
                     "method": scope["method"],
-                    "path": scope["path"],
+                    "path": path_with_query,
                     "status": status_code,
                     "duration": duration_ms,
                     "client_ip": client_ip,
@@ -85,7 +90,7 @@ class RequestLoggingMiddleware:
                 extra={
                     "method": scope["method"],
                     "path": scope["path"],
-                    "query": str(scope.get("query_string", b""), "utf-8"),
+                    "query": sanitized_query,
                     "status_code": status_code,
                     "duration_ms": round(duration_ms, 2),
                     "client_ip": client_ip,
