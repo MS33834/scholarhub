@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-06-23
+
+### Added — Security Hardening (Sprint 1–2)
+
+- **SEC-01/02**: Strong secret enforcement in non-test environments; Redis-backed
+  distributed rate limiting with in-memory fallback.
+- **SEC-03**: ASGI `MaxBodySizeMiddleware` (1 MiB limit) with nginx proxy buffering
+  alignment; 413 responses pass through logging and security headers.
+- **SEC-04**: Refresh token HttpOnly cookie — `HttpOnly; Secure; SameSite=Strict`
+  in production, cookie takes priority over request body, backward-compatible body
+  fallback. Frontend `fetch` uses `credentials: 'include'`.
+- **SEC-05**: Resource field-level validation — ID regex (path-traversal safe),
+  discipline slug whitelist, tag length/character validation (XSS safe), author
+  non-empty/length, URL http/https scheme enforcement (blocks `javascript:`,
+  `ftp:`).
+- **SEC-06**: Global exception handlers — structured 422 for validation errors,
+  consistent `{"detail": ...}` for HTTPException, generic 500 with request-id
+  correlation for unhandled exceptions. Stack traces never sent to client.
+- **SEC-07**: Log sanitization — sensitive query parameters (token, password,
+  secret, etc.) redacted to `***REDACTED***` in access logs.
+
+### Added — Stability (Sprint 3)
+
+- **STAB-01**: Configurable DB connection pool — `pool_size`, `max_overflow`,
+  `pool_recycle` (1800s), `pool_pre_ping` (True), `pool_timeout`. SQLite
+  auto-detected and exempt from pool kwargs.
+- **STAB-02**: FastAPI lifespan — startup DB connectivity check with retry
+  (5 attempts, 2s delay); graceful `engine.dispose()` on shutdown. `/health`
+  liveness probe (static 200) and `/health/ready` readiness probe (SELECT 1,
+  returns 503 on failure).
+- **STAB-03**: PostgreSQL integration tests (auto-skipped when PG unavailable).
+
+### Added — Production Readiness (Sprint 4)
+
+- **PROD-01**: `make backup`, `make restore FILE=...`, `make cleanup-db DAYS=N`
+  Makefile targets wrapping the existing pg_dump/restore scripts.
+- **PROD-02**: CI security scanning workflow — Bandit SAST, pip-audit dependency
+  vulnerability scan, npm audit (high+ critical). Extended Dependabot to cover
+  pip, docker, and github-actions ecosystems.
+- **PROD-03**: Top-level React `ErrorBoundary` wrapping the entire app (outside
+  Router, inside LangProvider) as a safety net for provider/hook errors.
+- **PROD-04**: `X-API-Version: 1.2.0` response header on all responses; version
+  bumped to 1.2.0 in FastAPI app, root endpoint, and pyproject.toml.
+
+### Changed
+
+- `medicine` and `law` added to the canonical discipline catalog (previously
+  present in seed data but missing from the API catalog, causing serialization
+  failures).
+- `backend/pyproject.toml` dev dependencies now include `bandit[toml]` and
+  `pip-audit`.
+
 ## [1.1.0] - 2026-06-11
 
 ### Added

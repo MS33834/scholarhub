@@ -1,4 +1,4 @@
-.PHONY: help up down migrate seed dev-backend dev-frontend dev-landing build-frontend build-landing install-frontend install-landing test lint
+.PHONY: help up down migrate seed dev-backend dev-frontend dev-landing build-frontend build-landing install-frontend install-landing test lint backup restore cleanup-db
 
 help:
 	@echo "ScholarHUB monorepo commands"
@@ -15,6 +15,9 @@ help:
 	@echo "  make install-landing - Install landing page dependencies"
 	@echo "  make test            - Run backend and frontend tests"
 	@echo "  make lint            - Run backend and frontend linters"
+	@echo "  make backup          - Backup the PostgreSQL database (pg_dump + gzip)"
+	@echo "  make restore         - Restore database from a backup file (FILE=...)"
+	@echo "  make cleanup-db      - Delete database backups older than N days (DAYS=30)"
 
 up:
 	docker compose -f infra/docker-compose.yml up --build -d
@@ -57,3 +60,13 @@ lint:
 	cd backend && ruff check app tests
 	cd frontend && npm run lint
 	cd landing && npm run lint
+
+backup:
+	cd backend && bash scripts/backup.sh
+
+restore:
+	@if [ -z "$(FILE)" ]; then echo "Usage: make restore FILE=backups/scholarhub_YYYYMMDD_HHMMSS.sql.gz"; exit 1; fi
+	cd backend && bash scripts/restore.sh "$(FILE)"
+
+cleanup-db:
+	cd backend && bash scripts/cleanup.sh $(or $(DAYS),30)

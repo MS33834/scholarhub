@@ -1,6 +1,6 @@
 [project]
 name = "scholarhub-api"
-version = "1.1.0"
+version = "1.2.0"
 description = "ScholarHUB backend API"
 requires-python = ">=3.11"
 dependencies = [
@@ -27,6 +27,8 @@ dev = [
     "pytest-asyncio>=0.24.0",
     "aiosqlite>=0.20.0",
     "ruff>=0.8.0",
+    "bandit[toml]>=1.7.0",
+    "pip-audit>=2.7.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -37,3 +39,14 @@ exclude = ["alembic*"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.bandit]
+# Exclude tests, migrations, and scripts from SAST scanning.
+exclude_dirs = ["tests", "alembic", "scripts"]
+# Focus on medium and high severity issues.
+level = "MEDIUM"
+confidence = "MEDIUM"
+
+[tool.bandit.assert_used]
+# Assert statements are fine in non-test code for invariants.
+skips = ["app/core/config.py"]

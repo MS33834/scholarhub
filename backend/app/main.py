@@ -79,7 +79,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.app_name,
-    version="1.1.0",
+    version="1.2.0",
     docs_url="/docs" if not settings.is_production else None,
     redoc_url="/redoc" if not settings.is_production else None,
     lifespan=lifespan,
@@ -149,7 +149,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 
 class SecurityHeadersMiddleware:
-    """Add baseline security headers to every response."""
+    """Add baseline security headers and API version to every response."""
 
     def __init__(self, app):
         self.app = app
@@ -177,6 +177,8 @@ class SecurityHeadersMiddleware:
                             b"content-security-policy",
                             b"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'",
                         ),
+                        # API version for client-side compatibility checks.
+                        (b"x-api-version", b"1.2.0"),
                     ]
                 )
                 message["headers"] = headers
@@ -221,7 +223,7 @@ app.include_router(users_router, prefix="/api")
 async def root(request: Request):
     return {
         "name": "ScholarHUB API",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "docs": "/docs",
     }
 

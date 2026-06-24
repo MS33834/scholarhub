@@ -14,3 +14,48 @@ updates:
     labels:
       - dependencies
       - automation
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: weekly
+    groups:
+      production-dependencies:
+        dependency-type: production
+      development-dependencies:
+        dependency-type: development
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: deps(frontend)
+    labels:
+      - dependencies
+      - automation
+
+  - package-ecosystem: pip
+    directory: /backend
+    schedule: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: deps(backend)
+    labels:
+      - dependencies
+      - automation
+
+  - package-ecosystem: docker
+    directory: /infra
+    schedule: weekly
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: deps(docker)
+    labels:
+      - dependencies
+      - automation
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: weekly
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: deps(ci)
+    labels:
+      - dependencies
+      - automation
