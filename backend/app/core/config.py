@@ -39,6 +39,15 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = "postgresql+asyncpg://scholarhub:scholarhub@localhost:5432/scholarhub"
+    # Connection pool tuning (ignored for SQLite, which uses a single connection).
+    db_pool_size: int = Field(default=10, ge=1, description="Base number of connections in the pool")
+    db_max_overflow: int = Field(default=20, ge=0, description="Connections allowed beyond pool_size")
+    db_pool_recycle: int = Field(default=1800, ge=0, description="Seconds before a connection is recycled (0 = never)")
+    db_pool_pre_ping: bool = Field(default=True, description="Test connections before use to avoid stale-connection errors")
+    db_pool_timeout: int = Field(default=30, ge=1, description="Seconds to wait for an available connection")
+    # Startup retry — number of times to retry the initial DB connectivity check.
+    db_startup_retries: int = Field(default=5, ge=0)
+    db_startup_retry_delay: float = Field(default=2.0, ge=0.1, description="Seconds between retries")
 
     # JWT — no default; must be provided via environment in any non-test env.
     secret_key: str = Field(default="")

@@ -1,10 +1,14 @@
-from fastapi import FastAPI, HTTPException, Request
+from contextlib import asynccontextmanager
+
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi.extension import _rate_limit_exceeded_handler
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.auth import router as auth_router
 from app.api.disciplines import router as disciplines_router
@@ -17,20 +21,72 @@ from app.api.users import router as users_router
 from app.core.config import settings
 from app.core.limiter import limiter, rate_limit
 from app.core.logging import configure_logging, get_logger
+from app.db.session import check_db_connection, engine, get_db
 from app.middleware.max_body import MaxBodySizeMiddleware
 from app.middleware.request_logging import RequestLoggingMiddleware
 
 configure_logging()
 logger = get_logger("scholarhub.errors")
+startup_logger = get_logger("scholarhub.startup")
+
+
+async def _verify_db_with_retry() -> None:
+    """Retry the DB connectivity check up to ``db_startup_retries`` times."""
+    import asyncio
+
+    last_exc: Exception | None = None
+    for attempt in range(1, settings.db_startup_retries + 2):
+        try:
+            await check_db_connection()
+            startup_logger.info(
+                "Database connection verified (attempt %d/%d)",
+                attempt,
+                settings.db_startup_retries + 1,
+            )
+            return
+        except Exception as exc:  # noqa: BLE001
+            last_exc = exc
+            if attempt <= settings.db_startup_retries:
+                startup_logger.warning(
+                    "Database not ready (attempt %d/%d): %s — retrying in %.1fs",
+                    attempt,
+                    settings.db_startup_retries + 1,
+                    exc,
+                    settings.db_startup_retry_delay,
+                )
+                await asyncio.sleep(settings.db_startup_retry_delay)
+            else:
+                startup_logger.error(
+                    "Database connection failed after %d attempts: %s",
+                    attempt,
+                    exc,
+                )
+    raise last_exc  # type: ignore[misc]
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan: verify DB on startup, dispose engine on shutdown."""
+    # Skip DB verification in test mode — tests manage their own DB lifecycle
+    # and the ASGITransport does not run lifespan events anyway.
+    if settings.environment != "test":
+        await _verify_db_with_retry()
+    yield
+    # Gracefully release all pooled connections.
+    await engine.dispose()
+    startup_logger.info("Database engine disposed")
+
 
 app = FastAPI(
     title=settings.app_name,
     version="1.1.0",
     docs_url="/docs" if not settings.is_production else None,
     redoc_url="/redoc" if not settings.is_production else None,
+    lifespan=lifespan,
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 
 
 @app.exception_handler(RequestValidationError)
@@ -172,7 +228,26 @@ async def root(request: Request):
 
 @app.get("/health")
 async def health():
+    """Liveness probe — always returns 200 if the process is alive."""
     return {"status": "ok"}
+
+
+@app.get("/health/ready")
+async def health_ready(db: AsyncSession = Depends(get_db)):
+    """Readiness probe — verifies the database is reachable.
+
+    Returns 503 when the DB connection fails so the load balancer stops
+    routing traffic to this instance until it recovers.
+    """
+    try:
+        await db.execute(text("SELECT 1"))
+        return {"status": "ok", "database": "connected"}
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Readiness check failed: %s", exc)
+        return JSONResponse(
+            status_code=503,
+            content={"status": "error", "database": "unavailable"},
+        )
 
 
 @app.get("/api/health")
