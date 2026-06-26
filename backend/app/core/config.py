@@ -9,20 +9,24 @@ _TEST_SECRET_KEY = "TEST_ONLY_DO_NOT_USE_IN_PRODUCTION_0123456789abcdef"
 _TEST_ADMIN_PASSWORD = "test_admin_password_12345"
 
 # Secrets that must never appear in any real environment.
-_WEAK_SECRET_KEYS = frozenset({
-    "",
-    "change-me-in-production-use-openssl-rand-hex-32",
-    _TEST_SECRET_KEY,
-})
-_WEAK_ADMIN_PASSWORDS = frozenset({
-    "",
-    "changeme",
-    "change-me",
-    "admin",
-    "password",
-    "admin123",
-    _TEST_ADMIN_PASSWORD,
-})
+_WEAK_SECRET_KEYS = frozenset(
+    {
+        "",
+        "change-me-in-production-use-openssl-rand-hex-32",
+        _TEST_SECRET_KEY,
+    }
+)
+_WEAK_ADMIN_PASSWORDS = frozenset(
+    {
+        "",
+        "changeme",
+        "change-me",
+        "admin",
+        "password",
+        "admin123",
+        _TEST_ADMIN_PASSWORD,
+    }
+)
 
 
 class Settings(BaseSettings):
@@ -40,14 +44,26 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "postgresql+asyncpg://scholarhub:scholarhub@localhost:5432/scholarhub"
     # Connection pool tuning (ignored for SQLite, which uses a single connection).
-    db_pool_size: int = Field(default=10, ge=1, description="Base number of connections in the pool")
-    db_max_overflow: int = Field(default=20, ge=0, description="Connections allowed beyond pool_size")
-    db_pool_recycle: int = Field(default=1800, ge=0, description="Seconds before a connection is recycled (0 = never)")
-    db_pool_pre_ping: bool = Field(default=True, description="Test connections before use to avoid stale-connection errors")
-    db_pool_timeout: int = Field(default=30, ge=1, description="Seconds to wait for an available connection")
+    db_pool_size: int = Field(
+        default=10, ge=1, description="Base number of connections in the pool"
+    )
+    db_max_overflow: int = Field(
+        default=20, ge=0, description="Connections allowed beyond pool_size"
+    )
+    db_pool_recycle: int = Field(
+        default=1800, ge=0, description="Seconds before a connection is recycled (0 = never)"
+    )
+    db_pool_pre_ping: bool = Field(
+        default=True, description="Test connections before use to avoid stale-connection errors"
+    )
+    db_pool_timeout: int = Field(
+        default=30, ge=1, description="Seconds to wait for an available connection"
+    )
     # Startup retry — number of times to retry the initial DB connectivity check.
     db_startup_retries: int = Field(default=5, ge=0)
-    db_startup_retry_delay: float = Field(default=2.0, ge=0.1, description="Seconds between retries")
+    db_startup_retry_delay: float = Field(
+        default=2.0, ge=0.1, description="Seconds between retries"
+    )
 
     # JWT — no default; must be provided via environment in any non-test env.
     secret_key: str = Field(default="")
@@ -150,17 +166,13 @@ class Settings(BaseSettings):
                 "Provide a strong password of at least 12 characters."
             )
         if len(self.admin_password) < 12:
-            raise ValueError(
-                "SCHOLARHUB_ADMIN_PASSWORD must be at least 12 characters long."
-            )
+            raise ValueError("SCHOLARHUB_ADMIN_PASSWORD must be at least 12 characters long.")
 
         # ---- Production-specific checks ----
         if self.is_production:
             hosts = self.allowed_hosts_list
             if not hosts or hosts == ["*"]:
-                raise ValueError(
-                    "SCHOLARHUB_ALLOWED_HOSTS must be explicitly set in production"
-                )
+                raise ValueError("SCHOLARHUB_ALLOWED_HOSTS must be explicitly set in production")
             if "*" in self.cors_origins_list:
                 raise ValueError("CORS wildcard '*' is not allowed in production")
 

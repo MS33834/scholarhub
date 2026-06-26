@@ -18,7 +18,12 @@ def test_test_environment_uses_test_secret():
 def test_development_rejects_empty_secret():
     """Development mode must refuse to start without a secret key."""
     with pytest.raises(ValidationError, match="SECRET_KEY"):
-        Settings(_env_file=None, environment="development", secret_key="", admin_password="strong_password_12345")
+        Settings(
+            _env_file=None,
+            environment="development",
+            secret_key="",
+            admin_password="strong_password_12345",
+        )
 
 
 def test_development_rejects_default_secret():
@@ -35,25 +40,42 @@ def test_development_rejects_default_secret():
 def test_development_rejects_short_secret():
     """Secret shorter than 32 chars must be rejected."""
     with pytest.raises(ValidationError, match="32 characters"):
-        Settings(_env_file=None, environment="development", secret_key="too_short", admin_password="strong_password_12345")
+        Settings(
+            _env_file=None,
+            environment="development",
+            secret_key="too_short",
+            admin_password="strong_password_12345",
+        )
 
 
 def test_development_rejects_weak_admin_password():
     """Common weak admin passwords must be rejected."""
     for weak in ("changeme", "admin", "password", "admin123", ""):
         with pytest.raises(ValidationError, match="ADMIN_PASSWORD"):
-            Settings(_env_file=None, environment="development", secret_key="a" * 64, admin_password=weak)
+            Settings(
+                _env_file=None, environment="development", secret_key="a" * 64, admin_password=weak
+            )
 
 
 def test_development_rejects_short_admin_password():
     """Admin password shorter than 12 chars must be rejected."""
     with pytest.raises(ValidationError, match="12 characters"):
-        Settings(_env_file=None, environment="development", secret_key="a" * 64, admin_password="short123")
+        Settings(
+            _env_file=None,
+            environment="development",
+            secret_key="a" * 64,
+            admin_password="short123",
+        )
 
 
 def test_development_accepts_strong_credentials():
     """Strong secret + password should initialise without error."""
-    s = Settings(_env_file=None, environment="development", secret_key="a" * 64, admin_password="strong_password_12345")
+    s = Settings(
+        _env_file=None,
+        environment="development",
+        secret_key="a" * 64,
+        admin_password="strong_password_12345",
+    )
     assert s.secret_key == "a" * 64
     assert s.admin_password == "strong_password_12345"
 

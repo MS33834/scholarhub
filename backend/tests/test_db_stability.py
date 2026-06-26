@@ -12,7 +12,7 @@ import pytest
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.core.config import Settings
-from app.db.session import _build_engine, check_db_connection
+from app.db.session import _build_engine
 
 
 # ---------------------------------------------------------------------------
@@ -147,7 +147,6 @@ class TestReadinessProbe:
             mock_session.execute.side_effect = Exception("connection lost")
             yield mock_session
 
-        original = app.dependency_overrides.get(get_db)
         app.dependency_overrides[get_db] = failing_db
         try:
             response = await client.get("/health/ready")

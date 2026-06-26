@@ -48,7 +48,7 @@ async def test_http_exception_returns_detail(client):
 @pytest.mark.asyncio
 async def test_exception_handler_returns_controlled_500():
     """The Exception handler returns a JSONResponse with 500, no raw traceback."""
-    from app.main import app, unhandled_exception_handler
+    from app.main import unhandled_exception_handler
 
     # Call the handler directly to verify its output
     from fastapi import Request
@@ -86,7 +86,6 @@ async def test_exception_handler_hides_details_in_production():
 
     try:
         from fastapi import Request
-        from starlette.responses import JSONResponse
 
         scope = {
             "type": "http",

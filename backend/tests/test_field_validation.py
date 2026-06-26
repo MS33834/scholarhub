@@ -115,7 +115,14 @@ async def test_reject_invalid_discipline(client, admin_user):
 @pytest.mark.asyncio
 async def test_accept_valid_discipline(client, admin_user):
     """Valid discipline slugs are accepted."""
-    for slug in ["computer-science", "mathematics", "physics", "life-sciences", "social-sciences", "humanities"]:
+    for slug in [
+        "computer-science",
+        "mathematics",
+        "physics",
+        "life-sciences",
+        "social-sciences",
+        "humanities",
+    ]:
         payload = _valid_resource_payload(id=f"test-{slug}", discipline=slug)
         response = await client.post(
             "/api/resources/",

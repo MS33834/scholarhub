@@ -61,7 +61,9 @@ def _validate_authors(authors: list[str]) -> list[str]:
         if not author or not author.strip():
             raise ValueError("Author names must not be empty.")
         if len(author) > _AUTHOR_MAX_LENGTH:
-            raise ValueError(f"Each author name must be at most {_AUTHOR_MAX_LENGTH} characters long.")
+            raise ValueError(
+                f"Each author name must be at most {_AUTHOR_MAX_LENGTH} characters long."
+            )
     return authors
 
 

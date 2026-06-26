@@ -4,8 +4,7 @@ from unittest.mock import patch
 
 from slowapi import Limiter
 
-from app.core.config import Settings
-from app.core.limiter import _create_limiter, _get_client_ip
+from app.core.limiter import _create_limiter
 
 
 def test_limiter_uses_memory_in_test_environment():
@@ -60,6 +59,7 @@ def test_rate_limit_disabled_in_tests():
     from app.core.limiter import rate_limit
 
     decorator = rate_limit("10/minute")
+
     # In test mode, the decorator returns a passthrough function.
     def dummy():
         return "ok"
